@@ -1,0 +1,43 @@
+{
+  "product": "OctoBot",
+  "version": "3.0",
+  "date": "2026-08-01",
+  "status": "released",
+  "tagline": "Out now — update from your dashboard",
+  "hero": {
+    "prompt": "A friendly 3D octopus mascot orchestrating floating trading dashboards, candlestick charts and exchange panels connected by glowing data lines",
+    "alt": "OctoBot mascot running strategies across exchanges"
+  },
+  "entries": [
+    {
+      "kind": "new",
+      "title": "Strategy Designer",
+      "body": "Build and wire strategies visually — no code",
+      "image": { "prompt": "node-based strategy editor with connected blocks and a candlestick chart, 3D icon style" }
+    },
+    {
+      "kind": "new",
+      "title": "TradingView signals",
+      "body": "Trigger trades straight from your alerts",
+      "image": { "prompt": "webhook signal arriving on a trading chart, lightning bolt icon, 3D icon style" }
+    },
+    {
+      "kind": "improvement",
+      "title": "Backtesting, 10× faster",
+      "body": "Years of candles in seconds",
+      "image": { "prompt": "speedometer over a rewinding price chart, 3D icon style" }
+    },
+    {
+      "kind": "update",
+      "title": "Portfolio & PnL",
+      "body": "Live positions across every exchange",
+      "image": { "prompt": "portfolio donut chart with coin tokens and a profit curve, 3D icon style" }
+    },
+    {
+      "kind": "bugfix",
+      "title": "Stability",
+      "body": "Over **40 fixes** across exchange connectors, order sync and the web interface"
+    }
+  ],
+  "footer": "OctoBot — open-source crypto trading bot. drakkar.software"
+}

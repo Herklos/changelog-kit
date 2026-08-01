@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script type="importmap">
+{"imports":{
+  "@changelog-kit/core":"../packages/core/src/index.js",
+  "@changelog-kit/brand":"../packages/brand/src/index.js",
+  "@changelog-kit/templates":"../packages/templates/src/index.js"
+}}
+</script>
+<style>body{margin:0;background:#777;}</style>
+</head>
+<body>
+<script type="module">
+import { builtinTemplates } from '@changelog-kit/templates';
+import { normalizeDoc } from '@changelog-kit/core';
+import { brandPresets } from '@changelog-kit/brand';
+
+// Read options from the hash (#t=feature-grid&b=paper) so it works behind any query string.
+const params = new URLSearchParams(location.hash.slice(1));
+const id = params.get('t') || 'hero-sandwich';
+const brand = Object.values(brandPresets).find(b => b.id === (params.get('b') || 'octobot-dark'));
+const t = builtinTemplates[id];
+const [aw, ah] = t.aspect ?? [4,5];
+const width = Number(params.get('w') || 1080);
+const height = Math.round(width * ah / aw);
+/** Stand-in artwork: a synthetic candlestick panel, seeded from the slot name. */
+const art = (s, w = 800, h = 800) => {
+  const c = brand.colors;
+  let seed = 9;
+  for (let i = 0; i < s.length; i++) seed = (seed * 33 + s.charCodeAt(i)) % 9973;
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+  const n = 22, step = w / (n + 2), pad = h * 0.18;
+  let y = h * 0.62, parts = '', line = [];
+  for (let i = 0; i < n; i++) {
+    const drift = (rnd() - 0.42) * h * 0.055;
+    const open = y, close = Math.max(pad, Math.min(h - pad, y + drift));
+    const up = close < open;
+    const top = Math.min(open, close), bh = Math.max(6, Math.abs(close - open));
+    const x = step * (i + 1), bw = step * 0.52;
+    const wickH = bh + rnd() * h * 0.05 + 8;
+    parts += `<rect x="${(x + bw / 2 - 1.5).toFixed(1)}" y="${(top - (wickH - bh) / 2).toFixed(1)}" width="3" height="${wickH.toFixed(1)}" fill="${up ? c.secondary : c.accent}" opacity=".45"/>`;
+    parts += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="2" fill="${up ? c.secondary : c.accent}"/>`;
+    line.push(`${(x + bw / 2).toFixed(1)},${close.toFixed(1)}`);
+    y = close;
+  }
+  const grid = [0.25, 0.5, 0.75].map((f) => `<rect x="0" y="${(h * f).toFixed(0)}" width="${w}" height="1" fill="#ffffff" opacity=".08"/>`).join('');
+  const halo = `<circle cx="${(w * 0.72).toFixed(0)}" cy="${(h * 0.28).toFixed(0)}" r="${(w * 0.34).toFixed(0)}" fill="${c.primary}" opacity=".10"/><circle cx="${(w * 0.2).toFixed(0)}" cy="${(h * 0.8).toFixed(0)}" r="${(w * 0.26).toFixed(0)}" fill="${c.secondary}" opacity=".08"/>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="100%" height="100%" fill="${c.heroTo}"/>${halo}${grid}<polyline points="${line.join(' ')}" fill="none" stroke="${c.primary}" stroke-width="3" opacity=".65"/>${parts}</svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+};
+const doc = normalizeDoc({
+  product: 'OctoBot', version: '3.0', tagline: 'Out now — update from your dashboard', date: 'August 2026',
+  status: id === 'teaser-poster' ? 'upcoming' : 'released',
+  hero: { src: art('hero', 1200, 900) },
+  footer: 'OctoBot — open-source crypto trading bot.',
+  entries: [
+    { kind:'new', title:'Strategy Designer', body:'Build and wire strategies visually', image:{src:art('a')} },
+    { kind:'new', title:'TradingView signals', body:'Trigger trades from your alerts', image:{src:art('b')} },
+    { kind:'improvement', title:'Backtesting, 10x faster', body:'Years of candles in seconds', image:{src:art('c')} },
+    { kind:'update', title:'Portfolio & PnL', body:'Live positions across every exchange', image:{src:art('d')} }
+  ]
+});
+const html = t.render({ doc, brand, size:{width, height, scale:1}, target:{format:'html'}, template:t });
+const parsed = new DOMParser().parseFromString(html, 'text/html');
+document.head.append(...parsed.head.querySelectorAll('style,link'));
+document.body.innerHTML = parsed.body.innerHTML;
+document.body.style.margin = '0';
+</script>
+</body>
+</html>

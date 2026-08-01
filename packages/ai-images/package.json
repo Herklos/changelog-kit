@@ -1,0 +1,26 @@
+{
+  "name": "@changelog-kit/ai-images",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Provider-agnostic AI image generation: one interface, adapters for OpenAI, Stability, Replicate, Google and a deterministic mock.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Drakkar-Software/changelog-kit.git",
+    "directory": "packages/ai-images"
+  },
+  "homepage": "https://github.com/Drakkar-Software/changelog-kit#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": "./src/index.js",
+    "./providers/*": "./src/providers/*.js"
+  },
+  "files": [
+    "src"
+  ],
+  "devDependencies": {
+    "@changelog-kit/brand": "workspace:*"
+  }
+}

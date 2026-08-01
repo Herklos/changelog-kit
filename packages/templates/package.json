@@ -1,0 +1,27 @@
+{
+  "name": "@changelog-kit/templates",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Layout templates for changelog visuals — every template is a pure (ctx) => html function.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Drakkar-Software/changelog-kit.git",
+    "directory": "packages/templates"
+  },
+  "homepage": "https://github.com/Drakkar-Software/changelog-kit#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": "./src/index.js",
+    "./layouts/*": "./src/layouts/*.js"
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "@changelog-kit/brand": "workspace:*",
+    "@changelog-kit/core": "workspace:*"
+  }
+}

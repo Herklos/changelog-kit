@@ -1,0 +1,18 @@
+{
+  "name": "@changelog-kit/examples",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node generate.mjs",
+    "cli": "changelog-kit generate octobot-3.0.json -t hero-sandwich,bento-mosaic,terminal-notes -f png,pdf -s instagram-portrait,a4 --provider mock"
+  },
+  "dependencies": {
+    "@changelog-kit/ai-images": "workspace:*",
+    "@changelog-kit/brand": "workspace:*",
+    "@changelog-kit/cli": "workspace:*",
+    "@changelog-kit/core": "workspace:*",
+    "@changelog-kit/renderer-playwright": "workspace:*",
+    "@changelog-kit/templates": "workspace:*"
+  }
+}

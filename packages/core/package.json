@@ -1,0 +1,22 @@
+{
+  "name": "@changelog-kit/core",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Document model, size presets and generation pipeline for changelog visuals.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Drakkar-Software/changelog-kit.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/Drakkar-Software/changelog-kit#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src"
+  ]
+}

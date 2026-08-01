@@ -1,0 +1,33 @@
+{
+  "name": "@changelog-kit/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "changelog-kit CLI: generate, preview and list templates, brands and size presets.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Drakkar-Software/changelog-kit.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/Drakkar-Software/changelog-kit#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "changelog-kit": "./bin/changelog-kit.js"
+  },
+  "exports": {
+    ".": "./src/run.js"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "dependencies": {
+    "@changelog-kit/ai-images": "workspace:*",
+    "@changelog-kit/brand": "workspace:*",
+    "@changelog-kit/core": "workspace:*",
+    "@changelog-kit/renderer-playwright": "workspace:*",
+    "@changelog-kit/templates": "workspace:*"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@changelog-kit/brand",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Brand kits: palette, typography, radii, shadows and font loading, compiled to CSS custom properties.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Drakkar-Software/changelog-kit.git",
+    "directory": "packages/brand"
+  },
+  "homepage": "https://github.com/Drakkar-Software/changelog-kit#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": "./src/index.js",
+    "./presets": "./src/presets.js"
+  },
+  "files": [
+    "src"
+  ]
+}

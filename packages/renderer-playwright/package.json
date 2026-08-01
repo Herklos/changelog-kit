@@ -1,0 +1,26 @@
+{
+  "name": "@changelog-kit/renderer-playwright",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Renders template HTML to png / jpg / webp / pdf with Playwright, post-processed by sharp.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Drakkar-Software/changelog-kit.git",
+    "directory": "packages/renderer-playwright"
+  },
+  "homepage": "https://github.com/Drakkar-Software/changelog-kit#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "playwright": "^1.47.0",
+    "sharp": "^0.33.5"
+  }
+}

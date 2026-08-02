@@ -1,5 +1,10 @@
-import { htmlDocument, u, imageBackground } from '../base.js';
-import { badge, cardCss } from '../components.js';import { esc, inlineMd } from '@changelog-kit/core';
+import { h } from '../h.js';
+import { View, Text } from '@changelog-kit/templates/rn';
+import { themeFromContext } from '../theme.js';
+import { Canvas } from '../canvas.js';
+import { Badge } from '../components.js';
+import { ArtSlot } from '../image.js';
+import { RichText } from '../text.js';
 
 /**
  * Document layout: title block, optional hero strip, then a typographic list
@@ -13,51 +18,72 @@ export const releaseNotes = {
   maxEntries: 24,
   render(ctx) {
     const { doc } = ctx;
+    const { u, theme } = themeFromContext(ctx);
     const groups = new Map();
     for (const entry of doc.entries) {
       if (!groups.has(entry.kind)) groups.set(entry.kind, []);
       groups.get(entry.kind).push(entry);
     }
 
-    const body = `<div class="sheet doc">
-  <header class="doc-head">
-    <div class="doc-eyebrow">${esc(doc.product || 'Release notes')}${doc.date ? ` · ${esc(doc.date)}` : ''}</div>
-    <h1 class="doc-title">Version ${esc(doc.version)}</h1>
-    ${doc.tagline ? `<p class="doc-lede">${esc(doc.tagline)}</p>` : ''}
-  </header>
-  ${doc.hero?.src ? `<div class="doc-hero" style="${imageBackground(doc.hero)}"></div>` : ''}
-  <main class="doc-body">
-    ${[...groups.entries()].map(([kind, list]) => `<section class="group">
-      <div class="group-head">${badge({ kind, badge: list[0].badge })}<span class="group-count">${list.length}</span></div>
-      <ul class="items">
-        ${list.map((e) => `<li class="item">
-          ${e.title ? `<h3 class="item-title">${inlineMd(e.title)}</h3>` : ''}
-          ${e.body ? `<p class="item-body">${inlineMd(e.body)}</p>` : ''}
-        </li>`).join('')}
-      </ul>
-    </section>`).join('')}
-  </main>
-  ${doc.footer ? `<footer class="doc-footer">${esc(doc.footer)}</footer>` : ''}
-</div>`;
+    const header = h(
+      View,
+      { style: { borderBottomWidth: u(2), borderBottomColor: theme.colors.ink, paddingBottom: u(16) } },
+      h(
+        Text,
+        { style: { fontSize: u(18), letterSpacing: u(2), textTransform: 'uppercase', color: theme.colors.inkMuted } },
+        `${doc.product || 'Release notes'}${doc.date ? ` · ${doc.date}` : ''}`
+      ),
+      h(Text, { style: { fontFamily: theme.fonts.display, fontSize: u(72), lineHeight: u(72), letterSpacing: u(-2), marginTop: u(8), color: theme.colors.ink } }, `Version ${doc.version}`),
+      doc.tagline
+        ? h(Text, { style: { fontSize: u(24), color: theme.colors.inkMuted, marginTop: u(10), maxWidth: u(640) } }, doc.tagline)
+        : null
+    );
 
-    const css = `
-${cardCss}
-.doc{gap:${u(26)};}
-.doc-head{border-bottom:${u(2)} solid var(--brand-color-ink);padding-bottom:${u(16)};}
-.doc-eyebrow{font-size:${u(18)};letter-spacing:${u(2)};text-transform:uppercase;color:var(--brand-color-inkMuted);}
-.doc-title{font-family:var(--brand-font-display);font-size:${u(72)};line-height:1;letter-spacing:${u(-2)};margin-top:${u(8)};}
-.doc-lede{font-size:${u(24)};color:var(--brand-color-inkMuted);margin-top:${u(10)};max-width:${u(640)};text-wrap:pretty;}
-.doc-hero{height:${u(260)};border-radius:calc(var(--brand-radius-image) * var(--u));}
-.doc-body{display:flex;flex-direction:column;gap:${u(28)};flex:1 1 auto;}
-.group-head{display:flex;align-items:center;gap:${u(10)};margin-bottom:${u(12)};}
-.group-count{font-size:${u(18)};color:var(--brand-color-inkMuted);}
-.items{list-style:none;display:flex;flex-direction:column;gap:${u(14)};}
-.item{padding-left:${u(18)};border-left:${u(3)} solid var(--brand-color-primary);}
-.item-title{font-family:var(--brand-font-display);font-size:${u(26)};line-height:1.2;}
-.item-body{font-size:${u(20)};line-height:1.45;color:var(--brand-color-inkMuted);text-wrap:pretty;}
-.doc-footer{border-top:${u(1)} solid var(--brand-color-inkMuted);padding-top:${u(12)};font-size:${u(16)};color:var(--brand-color-inkMuted);}
-@media print{html,body{height:auto;overflow:visible;}.doc{height:auto;}}`;
-    return htmlDocument(ctx, { css, body });
+    const body = h(
+      View,
+      { style: { flex: 1, gap: u(28) } },
+      ...[...groups.entries()].map(([kind, list], gi) =>
+        h(
+          View,
+          { key: gi },
+          h(
+            View,
+            { style: { flexDirection: 'row', alignItems: 'center', gap: u(10), marginBottom: u(12) } },
+            h(Badge, { entry: { kind, badge: list[0].badge }, theme, u }),
+            h(Text, { style: { fontSize: u(18), color: theme.colors.inkMuted } }, String(list.length))
+          ),
+          h(
+            View,
+            { style: { gap: u(14) } },
+            ...list.map((entry, i) =>
+              h(
+                View,
+                { key: i, style: { paddingLeft: u(18), borderLeftWidth: u(3), borderLeftColor: theme.colors.primary, gap: u(4) } },
+                entry.title
+                  ? h(RichText, { value: entry.title, style: { fontFamily: theme.fonts.display, fontSize: u(26), lineHeight: u(26) * 1.2, color: theme.colors.ink } })
+                  : null,
+                entry.body
+                  ? h(RichText, { value: entry.body, style: { fontSize: u(20), lineHeight: u(20) * 1.45, color: theme.colors.inkMuted } })
+                  : null
+              )
+            )
+          )
+        )
+      )
+    );
+
+    return h(
+      Canvas,
+      { size: ctx.size, theme, style: { gap: u(26) } },
+      header,
+      doc.hero?.src
+        ? h(ArtSlot, { image: doc.hero, theme, resolveImageSource: ctx.resolveImageSource, borderRadius: theme.radius.image, style: { position: 'relative', height: u(260) } })
+        : null,
+      body,
+      doc.footer
+        ? h(Text, { style: { borderTopWidth: u(1), borderTopColor: theme.colors.inkMuted, paddingTop: u(12), fontSize: u(16), color: theme.colors.inkMuted } }, doc.footer)
+        : null
+    );
   }
 };
 

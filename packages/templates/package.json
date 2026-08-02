@@ -1,8 +1,8 @@
 {
   "name": "@changelog-kit/templates",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
-  "description": "Layout templates for changelog visuals — every template is a pure (ctx) => html function.",
+  "description": "Layout templates for changelog visuals — every template is a pure (ctx) => ReactElement function, renderable natively (React Native) or through SSR (react-native-web).",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -15,7 +15,15 @@
   },
   "exports": {
     ".": "./src/index.js",
-    "./layouts/*": "./src/layouts/*.js"
+    "./layouts/*": "./src/layouts/*.js",
+    "./rn": {
+      "react-native": "./src/rn.native.js",
+      "default": "./src/rn.web.js"
+    },
+    "./svg": {
+      "react-native": "./src/svg.native.js",
+      "default": "./src/svg.web.js"
+    }
   },
   "files": [
     "src"
@@ -23,5 +31,27 @@
   "dependencies": {
     "@changelog-kit/brand": "workspace:*",
     "@changelog-kit/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-native": "*",
+    "react-native-svg": "^15.0.0",
+    "react-native-web": "^0.19.0 || ^0.20.0 || ^0.21.0"
+  },
+  "peerDependenciesMeta": {
+    "react-native": {
+      "optional": true
+    },
+    "react-native-svg": {
+      "optional": true
+    },
+    "react-native-web": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-native-web": "^0.21.2"
   }
 }

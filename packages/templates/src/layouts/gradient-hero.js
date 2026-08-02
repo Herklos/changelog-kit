@@ -1,6 +1,9 @@
-import { htmlDocument, u, imageBackground } from '../base.js';
-import { card, cardCss } from '../components.js';
-import { esc } from '@changelog-kit/core';
+import { h } from '../h.js';
+import { View, Text } from '@changelog-kit/templates/rn';
+import { themeFromContext } from '../theme.js';
+import { Canvas } from '../canvas.js';
+import { Card } from '../components.js';
+import { ArtSlot } from '../image.js';
 
 /**
  * Gradient hero built entirely from brand tokens (no artwork required):
@@ -14,47 +17,66 @@ export const gradientHero = {
   maxEntries: 4,
   render(ctx) {
     const { doc } = ctx;
+    const { u, theme } = themeFromContext(ctx);
     const entries = doc.entries.slice(0, 4);
+    const onDark = theme.colors.onDark;
+
     const row = (list, dark = false) =>
-      `<div class="row">${list.map((e) => card(e, { dark: dark || e.dark })).join('')}</div>`;
+      h(
+        View,
+        { style: { flexDirection: 'row', gap: theme.spacing.gap } },
+        ...list.map((entry, i) =>
+          h(View, { key: i, style: { flex: 1, minHeight: u(215) } }, h(Card, { entry, theme, u, dark: dark || entry.dark, resolveImageSource: ctx.resolveImageSource }))
+        )
+      );
 
-    const body = `<div class="sheet">
-  ${row(entries.slice(0, 2))}
-  <section class="ghero">
-    <div class="ghero-art" style="${doc.hero?.src ? imageBackground(doc.hero) : 'background:none'}"></div>
-    <div class="ghero-copy">
-      ${doc.product ? `<span class="ghero-product">${esc(doc.product)}</span>` : ''}
-      <span class="ghero-version">${esc(doc.version)}</span>
-      ${doc.tagline ? `<span class="ghero-tagline">${esc(doc.tagline)}</span>` : ''}
-    </div>
-  </section>
-  ${row(entries.slice(2, 4))}
-</div>`;
+    const hero = h(
+      View,
+      {
+        style: {
+          position: 'relative',
+          flex: 1,
+          minHeight: u(520),
+          overflow: 'hidden',
+          borderRadius: theme.radius.hero,
+          backgroundColor: theme.colors.heroTo,
+          boxShadow: theme.shadow.hero,
+          alignItems: 'center',
+          justifyContent: 'center'
+        }
+      },
+      doc.hero?.src ? h(ArtSlot, { image: doc.hero, theme, resolveImageSource: ctx.resolveImageSource }) : null,
+      h(
+        View,
+        { style: { alignItems: 'center', paddingHorizontal: u(56), width: '100%' } },
+        doc.product
+          ? h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(56), letterSpacing: u(-1), color: onDark, textAlign: 'center' } }, doc.product)
+          : null,
+        h(
+          Text,
+          {
+            style: {
+              fontFamily: theme.fonts.display,
+              fontWeight: '800',
+              fontSize: u(250),
+              lineHeight: u(250) * 0.88,
+              letterSpacing: u(-10),
+              color: onDark,
+              textAlign: 'center',
+              textShadowColor: 'rgba(0,0,0,.22)',
+              textShadowOffset: { width: 0, height: u(10) },
+              textShadowRadius: u(30)
+            }
+          },
+          doc.version
+        ),
+        doc.tagline
+          ? h(Text, { style: { fontSize: u(32), fontWeight: '500', opacity: 0.95, marginTop: u(10), color: onDark, textAlign: 'center' } }, doc.tagline)
+          : null
+      )
+    );
 
-    const css = `
-${cardCss}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--brand-space-gap) * var(--u));}
-.row .card{min-height:${u(215)};}
-.ghero{
-  position:relative;flex:1 1 auto;min-height:${u(520)};overflow:hidden;
-  border-radius:calc(var(--brand-radius-hero) * var(--u));
-  background:linear-gradient(135deg,var(--brand-color-heroFrom) 0%,var(--brand-color-heroTo) 100%);
-  box-shadow:var(--brand-shadow-hero);
-  display:flex;align-items:center;
-}
-.ghero-art{position:absolute;inset:0;}
-.ghero-copy{
-  position:relative;display:flex;flex-direction:column;align-items:center;
-  padding-left:${u(56)};padding-right:${u(56)};width:100%;
-  color:var(--brand-color-onDark,#fff);text-align:center;
-}
-.ghero-product{font-family:var(--brand-font-display);font-weight:700;font-size:${u(56)};letter-spacing:${u(-1)};}
-.ghero-version{
-  font-family:var(--brand-font-display);font-weight:800;font-size:${u(250)};line-height:.88;
-  letter-spacing:${u(-10)};text-shadow:0 ${u(10)} ${u(30)} rgba(0,0,0,.22);
-}
-.ghero-tagline{font-size:${u(32)};font-weight:500;opacity:.95;margin-top:${u(10)};}`;
-    return htmlDocument(ctx, { css, body });
+    return h(Canvas, { size: ctx.size, theme }, row(entries.slice(0, 2)), hero, row(entries.slice(2, 4)));
   }
 };
 

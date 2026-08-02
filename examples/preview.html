@@ -6,13 +6,20 @@
 {"imports":{
   "@changelog-kit/core":"../packages/core/src/index.js",
   "@changelog-kit/brand":"../packages/brand/src/index.js",
-  "@changelog-kit/templates":"../packages/templates/src/index.js"
+  "@changelog-kit/templates":"../packages/templates/src/index.js",
+  "@changelog-kit/templates/rn":"../packages/templates/src/rn.web.js",
+  "@changelog-kit/templates/svg":"../packages/templates/src/svg.web.js",
+  "react":"https://esm.sh/react@19.2.8",
+  "react-dom/client":"https://esm.sh/react-dom@19.2.8/client",
+  "react-native-web":"https://esm.sh/react-native-web@0.21.2?deps=react@19.2.8"
 }}
 </script>
 <style>body{margin:0;background:#777;}</style>
 </head>
 <body>
+<div id="root"></div>
 <script type="module">
+import { createRoot } from 'react-dom/client';
 import { builtinTemplates } from '@changelog-kit/templates';
 import { normalizeDoc } from '@changelog-kit/core';
 import { brandPresets } from '@changelog-kit/brand';
@@ -62,11 +69,11 @@ const doc = normalizeDoc({
     { kind:'update', title:'Portfolio & PnL', body:'Live positions across every exchange', image:{src:art('d')} }
   ]
 });
-const html = t.render({ doc, brand, size:{width, height, scale:1}, target:{format:'html'}, template:t });
-const parsed = new DOMParser().parseFromString(html, 'text/html');
-document.head.append(...parsed.head.querySelectorAll('style,link'));
-document.body.innerHTML = parsed.body.innerHTML;
-document.body.style.margin = '0';
+// `template.render()` now returns a React element (no HTML/CSS strings left
+// anywhere in `templates`) — react-native-web renders it like any other
+// React tree, no server-side step needed for an interactive preview.
+const element = t.render({ doc, brand, size:{width, height, scale:1}, target:{format:'native'}, template:t });
+createRoot(document.getElementById('root')).render(element);
 </script>
 </body>
 </html>

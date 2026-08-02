@@ -1,6 +1,10 @@
-import { htmlDocument, u, imageBackground } from '../base.js';
-import { badge, badgeCss } from '../components.js';
-import { esc, inlineMd } from '@changelog-kit/core';
+import { h } from '../h.js';
+import { View, Text } from '@changelog-kit/templates/rn';
+import { themeFromContext } from '../theme.js';
+import { Badge } from '../components.js';
+import { ArtSlot } from '../image.js';
+import { LinearFill } from '../gradients.js';
+import { RichText } from '../text.js';
 
 /**
  * 9:16 story: progress pips, a tall artwork panel, then the features as a
@@ -14,53 +18,72 @@ export const storyStack = {
   maxEntries: 4,
   render(ctx) {
     const { doc } = ctx;
+    const { u, theme } = themeFromContext(ctx);
     const entries = doc.entries.slice(0, 4);
-    const body = `<div class="sheet story">
-  <div class="pips">${entries.map((_, i) => `<span class="pip${i === 0 ? ' pip--on' : ''}"></span>`).join('')}</div>
-  <header class="story-head">
-    <span class="story-product">${esc(doc.product)}</span>
-    <span class="story-version">${esc(doc.version)}</span>
-    ${doc.tagline ? `<span class="story-tagline">${esc(doc.tagline)}</span>` : ''}
-  </header>
-  <div class="story-art" style="${imageBackground(doc.hero)}"></div>
-  <ul class="story-list">
-    ${entries.map((e, i) => `<li class="story-item">
-      <span class="story-num">${String(i + 1).padStart(2, '0')}</span>
-      <div class="story-copy">
-        <div class="story-line">${badge(e)}<h3 class="story-title">${inlineMd(e.title ?? '')}</h3></div>
-        ${e.body ? `<p class="story-text">${inlineMd(e.body)}</p>` : ''}
-      </div>
-    </li>`).join('')}
-  </ul>
-  ${doc.footer ? `<p class="story-footer">${esc(doc.footer)}</p>` : ''}
-</div>`;
+    const onDark = theme.colors.onDark;
 
-    const css = `
-${badgeCss}
-.badge{font-size:${u(17)};padding:${u(6)} ${u(13)};}
-.story{
-  background:linear-gradient(180deg,var(--brand-color-heroFrom) 0%,var(--brand-color-heroTo) 62%,var(--brand-color-heroTo) 100%);
-  color:var(--brand-color-onDark,#fff);gap:${u(24)};}
-.pips{display:flex;gap:${u(8)};}
-.pip{flex:1;height:${u(6)};border-radius:${u(6)};background:rgba(255,255,255,.28);}
-.pip--on{background:var(--brand-color-onDark,#fff);}
-.story-head{display:flex;flex-direction:column;gap:${u(2)};}
-.story-product{font-family:var(--brand-font-display);font-weight:600;font-size:${u(34)};opacity:.85;}
-.story-version{font-family:var(--brand-font-display);font-weight:800;font-size:${u(160)};line-height:.85;letter-spacing:${u(-7)};}
-.story-tagline{font-size:${u(28)};opacity:.85;margin-top:${u(10)};}
-.story-art{flex:1 1 auto;min-height:${u(300)};border-radius:calc(var(--brand-radius-hero) * var(--u));box-shadow:var(--brand-shadow-hero);}
-.story-list{list-style:none;display:flex;flex-direction:column;gap:${u(16)};flex:0 0 auto;}
-.story-item{display:flex;gap:${u(16)};align-items:flex-start;}
-.story-num{
-  font-family:var(--brand-font-display);font-weight:800;font-size:${u(24)};line-height:1;
-  padding:${u(10)} ${u(12)};border-radius:${u(12)};background:rgba(255,255,255,.16);min-width:${u(52)};text-align:center;
-}
-.story-copy{display:flex;flex-direction:column;gap:${u(6)};min-width:0;}
-.story-line{display:flex;align-items:center;gap:${u(12)};flex-wrap:wrap;}
-.story-title{font-family:var(--brand-font-display);font-weight:700;font-size:${u(34)};line-height:1.1;}
-.story-text{font-size:${u(24)};line-height:1.3;opacity:.8;text-wrap:pretty;}
-.story-footer{font-size:${u(20)};opacity:.6;}`;
-    return htmlDocument(ctx, { css, body });
+    return h(
+      View,
+      { style: { width: ctx.size.width, height: ctx.size.height, overflow: 'hidden', padding: theme.spacing.outer, gap: u(24) } },
+      h(LinearFill, {
+        colors: [{ color: theme.colors.heroFrom, offset: '0%' }, { color: theme.colors.heroTo, offset: '62%' }, { color: theme.colors.heroTo, offset: '100%' }],
+        angle: 180
+      }),
+      h(View, { style: { flexDirection: 'row', gap: u(8) } }, ...entries.map((_, i) =>
+        h(View, { key: i, style: { flex: 1, height: u(6), borderRadius: u(6), backgroundColor: i === 0 ? onDark : 'rgba(255,255,255,.28)' } })
+      )),
+      h(
+        View,
+        { style: { gap: u(2) } },
+        h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '600', fontSize: u(34), opacity: 0.85, color: onDark } }, doc.product),
+        h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '800', fontSize: u(160), lineHeight: u(160) * 0.85, letterSpacing: u(-7), color: onDark } }, doc.version),
+        doc.tagline ? h(Text, { style: { fontSize: u(28), opacity: 0.85, marginTop: u(10), color: onDark } }, doc.tagline) : null
+      ),
+      h(ArtSlot, { image: doc.hero, theme, resolveImageSource: ctx.resolveImageSource, borderRadius: theme.radius.hero, style: { position: 'relative', flex: 1, minHeight: u(300), boxShadow: theme.shadow.hero } }),
+      h(
+        View,
+        { style: { gap: u(16) } },
+        ...entries.map((entry, i) =>
+          h(
+            View,
+            { key: i, style: { flexDirection: 'row', gap: u(16), alignItems: 'flex-start' } },
+            h(
+              Text,
+              {
+                style: {
+                  fontFamily: theme.fonts.display,
+                  fontWeight: '800',
+                  fontSize: u(24),
+                  lineHeight: u(24),
+                  paddingVertical: u(10),
+                  paddingHorizontal: u(12),
+                  borderRadius: u(12),
+                  backgroundColor: 'rgba(255,255,255,.16)',
+                  minWidth: u(52),
+                  textAlign: 'center',
+                  color: onDark
+                }
+              },
+              String(i + 1).padStart(2, '0')
+            ),
+            h(
+              View,
+              { style: { flex: 1, minWidth: 0, gap: u(6) } },
+              h(
+                View,
+                { style: { flexDirection: 'row', alignItems: 'center', gap: u(12), flexWrap: 'wrap' } },
+                h(Badge, { entry, theme, u, fontSize: 17, paddingVertical: 6, paddingHorizontal: 13 }),
+                entry.title
+                  ? h(RichText, { value: entry.title, style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(34), lineHeight: u(34) * 1.1, color: onDark } })
+                  : null
+              ),
+              entry.body ? h(RichText, { value: entry.body, style: { fontSize: u(24), lineHeight: u(24) * 1.3, opacity: 0.8, color: onDark } }) : null
+            )
+          )
+        )
+      ),
+      doc.footer ? h(Text, { style: { fontSize: u(20), opacity: 0.6, color: onDark } }, doc.footer) : null
+    );
   }
 };
 

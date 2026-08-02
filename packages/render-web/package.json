@@ -1,0 +1,32 @@
+{
+  "name": "@changelog-kit/render-web",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Server-side render for @changelog-kit/templates: react-native-web + react-dom/server turn a template's React element into a full HTML document, so the same components used in a React Native app also drive the png/jpg/webp/pdf export pipeline.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Drakkar-Software/changelog-kit.git",
+    "directory": "packages/render-web"
+  },
+  "homepage": "https://github.com/Drakkar-Software/changelog-kit#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "@changelog-kit/brand": "workspace:*",
+    "@changelog-kit/core": "workspace:*",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-native-web": "^0.21.2"
+  },
+  "devDependencies": {
+    "@changelog-kit/templates": "workspace:*"
+  }
+}

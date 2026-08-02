@@ -12,15 +12,18 @@ export class ChangelogKit {
    * @param {Record<string, import('./types.js').Template>|import('./types.js').Template[]} options.templates
    * @param {import('./types.js').Renderer} options.renderer
    * @param {import('./types.js').Renderer} [options.pdfRenderer] Optional separate renderer for pdf.
+   * @param {import('./types.js').Serializer} options.serializer Turns a template's React element into HTML.
    * @param {{ generate(req): Promise<{url?:string,dataUri?:string,path?:string}> }} [options.imageProvider]
    * @param {(event: string, payload: object) => void} [options.onEvent]
    */
-  constructor({ brand, templates, renderer, pdfRenderer, imageProvider, onEvent } = {}) {
+  constructor({ brand, templates, renderer, pdfRenderer, serializer, imageProvider, onEvent } = {}) {
     if (!brand) throw new Error('ChangelogKit: a brand kit is required');
     if (!renderer) throw new Error('ChangelogKit: a renderer is required');
+    if (!serializer) throw new Error('ChangelogKit: a serializer is required to turn a template\'s React element into HTML');
     this.brand = brand;
     this.renderer = renderer;
     this.pdfRenderer = pdfRenderer ?? renderer;
+    this.serializer = serializer;
     this.imageProvider = imageProvider;
     this.onEvent = onEvent ?? (() => {});
     this.templates = Array.isArray(templates)
@@ -96,7 +99,8 @@ export class ChangelogKit {
     /** @type {import('./types.js').RenderContext} */
     const ctx = { doc: normalized, brand, size, target, template };
 
-    const html = template.render(ctx);
+    const element = template.render(ctx);
+    const html = this.serializer(element, ctx);
     if (target.format === 'html') {
       return {
         data: html,

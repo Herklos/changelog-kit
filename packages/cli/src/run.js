@@ -6,6 +6,7 @@ import { ChangelogKit, SIZE_PRESETS } from '@changelog-kit/core';
 import { builtinTemplates } from '@changelog-kit/templates';
 import { brandPresets, getBrandPreset, defineBrandKit } from '@changelog-kit/brand';
 import { PlaywrightRenderer } from '@changelog-kit/renderer-playwright';
+import { toStaticHtml } from '@changelog-kit/render-web';
 import { createProvider, CachedProvider, listProviders } from '@changelog-kit/ai-images';
 
 const HELP = `
@@ -105,6 +106,7 @@ export async function run(argv) {
     brand,
     templates: builtinTemplates,
     renderer: new PlaywrightRenderer({ baseUrl: pathToFileURL(path.dirname(path.resolve(docPath))).href + '/' }),
+    serializer: toStaticHtml,
     imageProvider,
     onEvent: (event, payload) => {
       if (event === 'render:done') console.log(`  ✓ ${payload.template} ${payload.size.width}x${payload.size.height} ${payload.target.format}`);
@@ -142,7 +144,7 @@ async function loadModuleOrJson(file) {
 }
 
 async function loadBrand(spec) {
-  if (!spec) return brandPresets.superageLight;
+  if (!spec) return brandPresets.octobotDark;
   if (spec.includes('.') || spec.includes('/')) {
     const loaded = await loadModuleOrJson(spec);
     return defineBrandKit(loaded.brand ?? loaded);

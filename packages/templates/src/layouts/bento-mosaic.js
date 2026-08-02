@@ -1,10 +1,75 @@
-import { htmlDocument, u, imageBackground } from '../base.js';
-import { badge, badgeCss } from '../components.js';
-import { esc, inlineMd } from '@changelog-kit/core';
+import { h } from '../h.js';
+import { View, Text } from '@changelog-kit/templates/rn';
+import { themeFromContext } from '../theme.js';
+import { Canvas } from '../canvas.js';
+import { Badge } from '../components.js';
+import { ArtSlot } from '../image.js';
+import { LinearFill } from '../gradients.js';
+import { RichText } from '../text.js';
+
+function Tile({ entry, theme, u, large = false, resolveImageSource }) {
+  const onDark = theme.colors.onDark;
+  const hasArt = !!entry.image;
+  return h(
+    View,
+    {
+      style: {
+        position: 'relative',
+        overflow: 'hidden',
+        justifyContent: 'flex-end',
+        backgroundColor: theme.colors.surface,
+        borderRadius: theme.radius.card,
+        boxShadow: theme.shadow.card,
+        padding: large ? u(32) : u(26),
+        gap: u(10),
+        minHeight: 0
+      }
+    },
+    hasArt ? h(ArtSlot, { image: entry.image, theme, resolveImageSource, style: { borderRadius: 0 } }) : null,
+    hasArt
+      ? h(LinearFill, {
+          colors: [{ color: 'rgba(4,6,20,.9)', offset: '0%' }, { color: 'rgba(4,6,20,.62)', offset: '42%' }, { color: 'rgba(4,6,20,.2)', offset: '100%' }],
+          angle: 0
+        })
+      : null,
+    h(
+      View,
+      { style: { gap: u(9) } },
+      h(Badge, { entry, theme, u }),
+      entry.title
+        ? h(RichText, {
+            value: entry.title,
+            style: {
+              fontFamily: theme.fonts.display,
+              fontWeight: '700',
+              fontSize: large ? u(52) : u(30),
+              lineHeight: (large ? u(52) : u(30)) * 1.14,
+              letterSpacing: large ? u(-1.4) : u(-0.4),
+              maxWidth: large ? u(620) : u(460),
+              color: hasArt ? onDark : theme.colors.ink
+            }
+          })
+        : null,
+      entry.body
+        ? h(RichText, {
+            value: entry.body,
+            style: { fontSize: large ? u(26) : u(21), lineHeight: (large ? u(26) : u(21)) * 1.3, maxWidth: large ? u(620) : u(420), color: hasArt ? 'rgba(255,255,255,.82)' : theme.colors.inkMuted }
+          })
+        : null
+    )
+  );
+}
 
 /**
  * Asymmetric bento: one tall lead tile with artwork, a wide version tile and
  * a run of small tiles. The most "designed" of the grid layouts.
+ *
+ * The original CSS used a 6-column grid with explicit `span` per tile —
+ * exact for a fixed entry count, but CSS Grid auto-placement has no RN
+ * equivalent. This ports the visual intent (a tall lead+version row, then a
+ * wide tile, then paired small tiles) as nested flex rows with `flexGrow`
+ * ratios standing in for column/row spans — it adapts to any entry count
+ * instead of replicating the exact 6-track math.
  */
 export const bentoMosaic = {
   id: 'bento-mosaic',
@@ -14,75 +79,44 @@ export const bentoMosaic = {
   maxEntries: 5,
   render(ctx) {
     const { doc } = ctx;
+    const { u, theme } = themeFromContext(ctx);
     const [lead, ...rest] = doc.entries;
     const small = rest.slice(0, 4);
+    const onDark = theme.colors.onDark;
 
-    const tile = (entry, cls = '') => `<article class="tile ${entry.image ? 'tile--art' : ''} ${cls}">
-      ${entry.image ? `<div class="tile-art tile-art--fill" style="${imageBackground(entry.image)}"></div>` : ''}
-      <div class="tile-body">
-        ${badge(entry)}
-        ${entry.title ? `<h3 class="tile-title">${inlineMd(entry.title)}</h3>` : ''}
-        ${entry.body ? `<p class="tile-text">${inlineMd(entry.body)}</p>` : ''}
-      </div>
-    </article>`;
+    const versionTile = h(
+      View,
+      { style: { flexGrow: 2, minHeight: 0, justifyContent: 'center', alignItems: 'flex-start', gap: u(2), padding: u(26), borderRadius: theme.radius.card, overflow: 'hidden' } },
+      h(LinearFill, { colors: [theme.colors.heroFrom, theme.colors.heroTo], angle: 150 }),
+      h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '600', fontSize: u(30), opacity: 0.85, color: onDark } }, doc.product),
+      h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '800', fontSize: u(140), lineHeight: u(140) * 0.88, letterSpacing: u(-6), color: onDark } }, doc.version),
+      doc.tagline ? h(Text, { style: { fontSize: u(21), opacity: 0.85, marginTop: u(8), color: onDark } }, doc.tagline) : null
+    );
 
-    const body = `<div class="sheet mosaic">
-  <article class="tile tile--lead tile--art">
-    <div class="tile-art tile-art--fill" style="${imageBackground(lead.image ?? doc.hero)}"></div>
-    <div class="tile-body">
-      ${badge(lead)}
-      <h3 class="tile-title tile-title--lg">${inlineMd(lead.title ?? '')}</h3>
-      ${lead.body ? `<p class="tile-text tile-text--lg">${inlineMd(lead.body)}</p>` : ''}
-    </div>
-  </article>
-  <article class="tile tile--version">
-    <span class="v-product">${esc(doc.product)}</span>
-    <span class="v-number">${esc(doc.version)}</span>
-    ${doc.tagline ? `<span class="v-tagline">${esc(doc.tagline)}</span>` : ''}
-  </article>
-  ${small.map((e, i) => tile(e, i === 0 ? 'tile--wide' : '')).join('')}
-</div>`;
+    const rows = [
+      h(
+        View,
+        { key: 'lead-row', style: { flexGrow: 3, minHeight: 0, flexDirection: 'row', gap: theme.spacing.gap } },
+        h(View, { style: { flexGrow: 4, minHeight: 0 } }, h(Tile, { entry: lead, theme, u, large: true, resolveImageSource: ctx.resolveImageSource })),
+        versionTile
+      )
+    ];
 
-    const css = `
-${badgeCss}
-.mosaic{
-  display:grid;
-  grid-template-columns:repeat(6,1fr);
-  grid-auto-rows:1fr;
-  gap:calc(var(--brand-space-gap) * var(--u));
-}
-.tile{
-  position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;
-  background:var(--brand-color-surface);
-  border-radius:calc(var(--brand-radius-card) * var(--u));
-  box-shadow:var(--brand-shadow-card);
-  padding:${u(26)};gap:${u(10)};min-height:0;
-  grid-column:span 3;grid-row:span 2;
-}
-.tile--lead{grid-column:span 4;grid-row:span 3;padding:${u(32)};}
-.tile--version{
-  grid-column:span 2;grid-row:span 3;justify-content:center;align-items:flex-start;gap:${u(2)};
-  background:linear-gradient(150deg,var(--brand-color-heroFrom),var(--brand-color-heroTo));
-  color:var(--brand-color-onDark,#fff);
-}
-.tile--wide{grid-column:span 6;grid-row:span 2;}
-.tile-body{display:flex;flex-direction:column;gap:${u(9)};position:relative;z-index:2;}
-.tile-art{position:absolute;inset:0;}
-.tile-art--fill{border-radius:0;}
-.tile--art::after{
-  content:'';position:absolute;inset:0;z-index:1;
-  background:linear-gradient(to top,rgba(4,6,20,.9) 0%,rgba(4,6,20,.62) 42%,rgba(4,6,20,.2) 100%);
-}
-.tile--art .tile-body{color:var(--brand-color-onDark,#fff);}
-.tile--art .tile-text{color:rgba(255,255,255,.82);}
-.tile-title{font-family:var(--brand-font-display);font-weight:700;font-size:${u(30)};line-height:1.14;letter-spacing:${u(-0.4)};text-wrap:balance;max-width:${u(460)};}
-.tile-title--lg{font-size:${u(52)};letter-spacing:${u(-1.4)};max-width:${u(620)};}
-.tile-text{font-size:${u(21)};line-height:1.3;color:var(--brand-color-inkMuted);max-width:${u(420)};text-wrap:pretty;}
-.tile-text--lg{font-size:${u(26)};max-width:${u(620)};}
-.v-product{font-family:var(--brand-font-display);font-weight:600;font-size:${u(30)};opacity:.85;}
-.v-number{font-family:var(--brand-font-display);font-weight:800;font-size:${u(140)};line-height:.88;letter-spacing:${u(-6)};}
-.v-tagline{font-size:${u(21)};opacity:.85;margin-top:${u(8)};text-wrap:pretty;}`;
-    return htmlDocument(ctx, { css, body });
+    if (small.length) {
+      rows.push(h(View, { key: 'wide-row', style: { flexGrow: 2, minHeight: 0 } }, h(Tile, { entry: small[0], theme, u, resolveImageSource: ctx.resolveImageSource })));
+      for (let i = 1; i < small.length; i += 2) {
+        const pair = small.slice(i, i + 2);
+        rows.push(
+          h(
+            View,
+            { key: `pair-${i}`, style: { flexGrow: 2, minHeight: 0, flexDirection: 'row', gap: theme.spacing.gap } },
+            ...pair.map((entry, j) => h(View, { key: j, style: { flexGrow: 1, minHeight: 0 } }, h(Tile, { entry, theme, u, resolveImageSource: ctx.resolveImageSource })))
+          )
+        );
+      }
+    }
+
+    return h(Canvas, { size: ctx.size, theme }, ...rows);
   }
 };
 

@@ -27,6 +27,7 @@
     "@changelog-kit/ai-images": "workspace:*",
     "@changelog-kit/brand": "workspace:*",
     "@changelog-kit/core": "workspace:*",
+    "@changelog-kit/render-web": "workspace:*",
     "@changelog-kit/renderer-playwright": "workspace:*",
     "@changelog-kit/templates": "workspace:*"
   }

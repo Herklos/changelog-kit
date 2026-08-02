@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "changelog-kit example",
+    "slug": "changelog-kit-example-native",
+    "scheme": "changelog-kit-example",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": { "supportsTablet": true },
+    "android": {},
+    "web": { "bundler": "metro" }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "product": "OctoBot",
+  "version": "3.0",
+  "date": "2026-08-01",
+  "status": "released",
+  "tagline": "Out now — update from your dashboard",
+  "entries": [
+    {
+      "kind": "new",
+      "title": "Strategy Designer",
+      "body": "Build and wire strategies visually — no code"
+    },
+    {
+      "kind": "new",
+      "title": "TradingView signals",
+      "body": "Trigger trades straight from your alerts"
+    },
+    {
+      "kind": "improvement",
+      "title": "Backtesting, 10× faster",
+      "body": "Years of candles in seconds"
+    },
+    {
+      "kind": "update",
+      "title": "Portfolio & PnL",
+      "body": "Live positions across every exchange"
+    },
+    {
+      "kind": "bugfix",
+      "title": "Stability",
+      "body": "Over **40 fixes** across exchange connectors, order sync and the web interface"
+    }
+  ],
+  "footer": "OctoBot — open-source crypto trading bot."
+}

@@ -1,6 +1,12 @@
-import { htmlDocument, u, imageBackground } from '../base.js';
-import { badge, badgeCss } from '../components.js';
-import { esc, inlineMd } from '@changelog-kit/core';
+import { h } from '../h.js';
+import { View, Text } from '@changelog-kit/templates/rn';
+import { themeFromContext } from '../theme.js';
+import { Badge } from '../components.js';
+import { ArtSlot } from '../image.js';
+import { RadialFill } from '../gradients.js';
+import { RichText } from '../text.js';
+
+const TILT = [-4, -1.5, 1.5, 4];
 
 /**
  * A fanned stack of feature cards over an outsized version numeral: depth and
@@ -14,65 +20,72 @@ export const cardDeck = {
   maxEntries: 4,
   render(ctx) {
     const { doc } = ctx;
+    const { u, theme } = themeFromContext(ctx);
     const entries = doc.entries.slice(0, 4);
-    const tilt = [-4, -1.5, 1.5, 4];
-    const lift = [3, 0, 0, 3];
+    const onDark = theme.colors.onDark;
 
-    const body = `<div class="deck">
-  <span class="deck-ghost">${esc(doc.version)}</span>
-  <header class="deck-head">
-    <span class="deck-product">${esc(doc.product)}</span>
-    ${doc.tagline ? `<p class="deck-tagline">${esc(doc.tagline)}</p>` : ''}
-  </header>
-  <div class="deck-fan">
-    ${entries.map((e, i) => `<article class="deck-card" style="transform:rotate(${tilt[i] ?? 0}deg) translateY(${lift[i] ?? 0}%);z-index:${10 - Math.abs(i - 1.5)}">
-      ${e.image ? `<div class="deck-art" style="${imageBackground(e.image)}"></div>` : ''}
-      <div class="deck-copy">
-        ${badge(e)}
-        <h3 class="deck-title">${inlineMd(e.title ?? '')}</h3>
-        ${e.body ? `<p class="deck-text">${inlineMd(e.body)}</p>` : ''}
-      </div>
-    </article>`).join('')}
-  </div>
-  ${doc.footer ? `<p class="deck-footer">${esc(doc.footer)}</p>` : ''}
-</div>`;
-
-    const css = `
-${badgeCss}
-.badge{font-size:${u(15)};padding:${u(5)} ${u(12)};}
-.deck{
-  position:relative;width:var(--w);height:var(--h);overflow:hidden;
-  display:flex;flex-direction:column;align-items:center;
-  padding:calc(var(--brand-space-outer) * var(--u));
-  background:radial-gradient(120% 80% at 50% 0%,var(--brand-color-heroFrom) 0%,var(--brand-color-heroTo) 70%);
-  color:var(--brand-color-onDark,#fff);
-}
-.deck-ghost{
-  position:absolute;left:50%;top:${u(210)};transform:translateX(-50%);
-  font-family:var(--brand-font-display);font-weight:800;font-size:${u(460)};line-height:.8;
-  letter-spacing:${u(-20)};color:rgba(255,255,255,.07);white-space:nowrap;
-}
-.deck-head{position:relative;display:flex;flex-direction:column;align-items:center;gap:${u(8)};text-align:center;}
-.deck-product{font-family:var(--brand-font-display);font-weight:700;font-size:${u(58)};letter-spacing:${u(-1.4)};}
-.deck-tagline{font-size:${u(28)};opacity:.85;max-width:${u(620)};text-wrap:pretty;}
-.deck-fan{
-  position:relative;flex:1 1 auto;align-self:stretch;min-height:0;
-  display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:1fr 1fr;gap:${u(26)};
-  align-content:center;padding:${u(20)} ${u(10)};
-}
-.deck-card{
-  background:var(--brand-color-surface);color:var(--brand-color-ink);
-  border-radius:calc(var(--brand-radius-card) * var(--u));
-  box-shadow:var(--brand-shadow-hero);
-  padding:${u(22)};display:flex;flex-direction:column;gap:${u(12)};
-  height:100%;min-height:0;overflow:hidden;transform-origin:50% 50%;
-}
-.deck-art{flex:1 1 auto;min-height:${u(90)};border-radius:calc(var(--brand-radius-image) * var(--u));}
-.deck-copy{display:flex;flex-direction:column;gap:${u(8)};}
-.deck-title{font-family:var(--brand-font-display);font-weight:700;font-size:${u(30)};line-height:1.1;text-wrap:balance;}
-.deck-text{font-size:${u(21)};line-height:1.3;color:var(--brand-color-inkMuted);text-wrap:pretty;}
-.deck-footer{position:relative;font-size:${u(18)};opacity:.7;margin-top:${u(16)};}`;
-    return htmlDocument(ctx, { css, body });
+    return h(
+      View,
+      { style: { position: 'relative', width: ctx.size.width, height: ctx.size.height, overflow: 'hidden', padding: theme.spacing.outer, alignItems: 'center' } },
+      h(RadialFill, { colors: [theme.colors.heroFrom, theme.colors.heroTo], cx: '50%', cy: '0%', r: '80%' }),
+      h(
+        View,
+        { style: { position: 'absolute', left: 0, right: 0, top: u(210), alignItems: 'center' } },
+        h(
+          Text,
+          { style: { fontFamily: theme.fonts.display, fontWeight: '800', fontSize: u(460), lineHeight: u(460) * 0.8, letterSpacing: u(-20), color: 'rgba(255,255,255,.07)' } },
+          doc.version
+        )
+      ),
+      h(
+        View,
+        { style: { alignItems: 'center', gap: u(8) } },
+        h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(58), letterSpacing: u(-1.4), color: onDark, textAlign: 'center' } }, doc.product),
+        doc.tagline ? h(Text, { style: { fontSize: u(28), opacity: 0.85, maxWidth: u(620), color: onDark, textAlign: 'center' } }, doc.tagline) : null
+      ),
+      h(
+        View,
+        { style: { flex: 1, alignSelf: 'stretch', minHeight: 0, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'center', gap: u(26), paddingVertical: u(20), paddingHorizontal: u(10) } },
+        ...entries.map((entry, i) =>
+          h(
+            View,
+            { key: i, style: { flexBasis: '50%', flexGrow: 0, flexShrink: 0, minHeight: 0 } },
+            h(
+              View,
+              {
+                style: {
+                  backgroundColor: theme.colors.surface,
+                  borderRadius: theme.radius.card,
+                  boxShadow: theme.shadow.hero,
+                  padding: u(22),
+                  gap: u(12),
+                  minHeight: 0,
+                  overflow: 'hidden',
+                  // The original also nudged alternating cards vertically
+                  // (`translateY(±3%)`); RN transforms need fixed pixel
+                  // offsets, not percentages of an unmeasured height, so
+                  // only the tilt survives — the fan still reads from rotation alone.
+                  transform: [{ rotate: `${TILT[i] ?? 0}deg` }]
+                }
+              },
+              entry.image
+                ? h(ArtSlot, { image: entry.image, theme, resolveImageSource: ctx.resolveImageSource, borderRadius: theme.radius.image, style: { position: 'relative', flex: 1, minHeight: u(90) } })
+                : null,
+              h(
+                View,
+                { style: { gap: u(8) } },
+                h(Badge, { entry, theme, u, fontSize: 15, paddingVertical: 5, paddingHorizontal: 12 }),
+                entry.title
+                  ? h(RichText, { value: entry.title, style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(30), lineHeight: u(30) * 1.1, color: theme.colors.ink } })
+                  : null,
+                entry.body ? h(RichText, { value: entry.body, style: { fontSize: u(21), lineHeight: u(21) * 1.3, color: theme.colors.inkMuted } }) : null
+              )
+            )
+          )
+        )
+      ),
+      doc.footer ? h(Text, { style: { fontSize: u(18), opacity: 0.7, marginTop: u(16), color: onDark } }, doc.footer) : null
+    );
   }
 };
 

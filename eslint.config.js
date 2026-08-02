@@ -4,7 +4,7 @@ export default [
     languageOptions: {
       ecmaVersion: 2023,
       sourceType: 'module',
-      globals: { console: 'readonly', process: 'readonly', fetch: 'readonly', Buffer: 'readonly', FormData: 'readonly', structuredClone: 'readonly', setTimeout: 'readonly', document: 'readonly', requestAnimationFrame: 'readonly', AbortSignal: 'readonly' }
+      globals: { console: 'readonly', process: 'readonly', fetch: 'readonly', Buffer: 'readonly', FormData: 'readonly', structuredClone: 'readonly', setTimeout: 'readonly', document: 'readonly', requestAnimationFrame: 'readonly', AbortSignal: 'readonly', URL: 'readonly' }
     },
     rules: {
       'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],

@@ -1,6 +1,9 @@
-import { htmlDocument, u, imageBackground } from '../base.js';
-import { badge, badgeCss } from '../components.js';
-import { esc, inlineMd } from '@changelog-kit/core';
+import { h } from '../h.js';
+import { View, Text } from '@changelog-kit/templates/rn';
+import { themeFromContext } from '../theme.js';
+import { Badge } from '../components.js';
+import { ArtSlot } from '../image.js';
+import { RichText } from '../text.js';
 
 /**
  * One feature, told properly: full-bleed artwork with an edge-to-edge caption
@@ -14,41 +17,66 @@ export const spotlight = {
   maxEntries: 1,
   render(ctx) {
     const { doc } = ctx;
+    const { u, theme } = themeFromContext(ctx);
     const lead = doc.entries[0] ?? {};
-    const body = `<div class="spot">
-  <div class="spot-art" style="${imageBackground(lead.image ?? doc.hero)}"></div>
-  <div class="spot-chip">${esc(doc.product)} <b>${esc(doc.version)}</b></div>
-  <div class="spot-plate">
-    <div class="spot-meta">${badge(lead)}${doc.date ? `<span class="spot-date">${esc(doc.date)}</span>` : ''}</div>
-    <h1 class="spot-title">${inlineMd(lead.title ?? '')}</h1>
-    ${lead.body ? `<p class="spot-text">${inlineMd(lead.body)}</p>` : ''}
-  </div>
-</div>`;
+    const onDark = theme.colors.onDark;
 
-    const css = `
-${badgeCss}
-.spot{position:relative;width:var(--w);height:var(--h);overflow:hidden;background:var(--brand-color-heroTo);}
-.spot-art{position:absolute;inset:0;}
-.spot-chip{
-  position:absolute;top:${u(38)};left:${u(38)};z-index:2;
-  font-family:var(--brand-font-display);font-weight:500;font-size:${u(24)};
-  color:var(--brand-color-onDark,#fff);background:rgba(255,255,255,.14);
-  border:${u(1)} solid rgba(255,255,255,.28);backdrop-filter:blur(${u(14)});
-  padding:${u(10)} ${u(20)};border-radius:calc(var(--brand-radius-badge) * var(--u));
-}
-.spot-chip b{font-weight:800;}
-.spot-plate{
-  position:absolute;left:${u(34)};right:${u(34)};bottom:${u(34)};z-index:2;
-  background:var(--brand-color-surface);
-  border-radius:calc(var(--brand-radius-hero) * var(--u));
-  padding:${u(38)} ${u(40)};display:flex;flex-direction:column;gap:${u(14)};
-  box-shadow:var(--brand-shadow-hero);
-}
-.spot-meta{display:flex;align-items:center;gap:${u(14)};}
-.spot-date{font-size:${u(20)};color:var(--brand-color-inkMuted);}
-.spot-title{font-family:var(--brand-font-display);font-weight:800;font-size:${u(66)};line-height:1.04;letter-spacing:${u(-2)};text-wrap:balance;}
-.spot-text{font-size:${u(28)};line-height:1.35;color:var(--brand-color-inkMuted);max-width:${u(760)};text-wrap:pretty;}`;
-    return htmlDocument(ctx, { css, body });
+    return h(
+      View,
+      { style: { width: ctx.size.width, height: ctx.size.height, overflow: 'hidden', backgroundColor: theme.colors.heroTo } },
+      h(ArtSlot, { image: lead.image ?? doc.hero, theme, resolveImageSource: ctx.resolveImageSource }),
+      h(
+        View,
+        {
+          style: {
+            position: 'absolute',
+            top: u(38),
+            left: u(38),
+            flexDirection: 'row',
+            alignItems: 'center',
+            // backdrop-filter: blur() has no RN/react-native-web equivalent — the
+            // translucent fill alone is the approximation (see CLAUDE.md).
+            backgroundColor: 'rgba(255,255,255,.14)',
+            borderWidth: u(1),
+            borderColor: 'rgba(255,255,255,.28)',
+            paddingVertical: u(10),
+            paddingHorizontal: u(20),
+            borderRadius: theme.radius.badge
+          }
+        },
+        h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '500', fontSize: u(24), color: onDark } }, `${doc.product} `),
+        h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '800', fontSize: u(24), color: onDark } }, doc.version)
+      ),
+      h(
+        View,
+        {
+          style: {
+            position: 'absolute',
+            left: u(34),
+            right: u(34),
+            bottom: u(34),
+            backgroundColor: theme.colors.surface,
+            borderRadius: theme.radius.hero,
+            paddingVertical: u(38),
+            paddingHorizontal: u(40),
+            gap: u(14),
+            boxShadow: theme.shadow.hero
+          }
+        },
+        h(
+          View,
+          { style: { flexDirection: 'row', alignItems: 'center', gap: u(14) } },
+          h(Badge, { entry: lead, theme, u }),
+          doc.date ? h(Text, { style: { fontSize: u(20), color: theme.colors.inkMuted } }, doc.date) : null
+        ),
+        lead.title
+          ? h(RichText, { value: lead.title, style: { fontFamily: theme.fonts.display, fontWeight: '800', fontSize: u(66), lineHeight: u(66) * 1.04, letterSpacing: u(-2), color: theme.colors.ink } })
+          : null,
+        lead.body
+          ? h(RichText, { value: lead.body, style: { fontSize: u(28), lineHeight: u(28) * 1.35, color: theme.colors.inkMuted, maxWidth: u(760) } })
+          : null
+      )
+    );
   }
 };
 

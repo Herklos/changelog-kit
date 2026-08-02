@@ -1,3 +1,8 @@
+import { useCallback, useState } from 'react';
+import { View, ScrollView } from '@changelog-kit/templates/rn';
+import { normalizeDoc } from '@changelog-kit/core';
+import { h } from './h.js';
+
 import heroSandwich from './layouts/hero-sandwich.js';
 import gradientHero from './layouts/gradient-hero.js';
 import teaserPoster from './layouts/teaser-poster.js';
@@ -25,8 +30,13 @@ export {
   editorialSplit, metricCards, timelineRail, duotoneCover, cardDeck,
   splitDiagonal, deviceShowcase, ticketStub, megaType, whatsNewSheet
 };
-export * from './base.js';
+export * from './scale.js';
+export * from './theme.js';
 export * from './components.js';
+export * from './text.js';
+export * from './image.js';
+export * from './gradients.js';
+export { Canvas } from './canvas.js';
 
 /** @type {Record<string, import('@changelog-kit/core').Template>} */
 export const builtinTemplates = Object.fromEntries(
@@ -53,4 +63,47 @@ export function defineTemplate(spec) {
     throw new Error('defineTemplate requires { id, render }');
   }
   return { name: spec.id, aspect: [4, 5], maxEntries: 6, ...spec };
+}
+
+/**
+ * Renders a changelog doc as live React Native UI.
+ *
+ * `unit` is derived from the *measured* container width (`onLayout`, never
+ * `Dimensions.get()`) divided by `baseWidth`. Poster type is authored
+ * against a 1080px canvas — at a phone's width that unit is tiny, so
+ * `whats-new-sheet` (authored for the 750-wide `in-app` preset) should be
+ * used with `baseWidth={750}` for near-native type sizes; the default 1080
+ * gives a faithful poster thumbnail instead.
+ *
+ * `scroll` puts the rendered canvas in a `ScrollView` so a render taller
+ * than the viewport (a small `baseWidth` on a tall device) stays reachable.
+ * It does **not** bypass a layout's `maxEntries` cap or its own
+ * `overflow:hidden` — every layout is still a fixed-size poster underneath;
+ * `scroll` only changes whether the *device* can clip it.
+ *
+ * @param {{doc: object, brand: object, template: string, baseWidth?: number, scroll?: boolean,
+ *   fontFamilies?: {display?: string, body?: string}, resolveImageSource?: (src: string) => object}} props
+ */
+export function Changelog({ doc, brand, template: templateId, baseWidth = 1080, scroll = false, fontFamilies, resolveImageSource }) {
+  const [width, setWidth] = useState(0);
+  const onLayout = useCallback((e) => setWidth(e.nativeEvent.layout.width), []);
+
+  const template = getTemplate(templateId);
+  const [aw, ah] = template.aspect ?? [4, 5];
+
+  const content = width
+    ? template.render({
+        doc: normalizeDoc(doc),
+        brand,
+        size: { width, height: Math.round((width * ah) / aw) },
+        target: { format: 'native' },
+        template,
+        baseWidth,
+        fontFamilies,
+        resolveImageSource
+      })
+    : null;
+
+  const measured = h(View, { onLayout, style: { width: '100%' } }, content);
+  return scroll ? h(ScrollView, { style: { width: '100%' } }, measured) : measured;
 }

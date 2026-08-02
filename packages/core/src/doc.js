@@ -74,13 +74,51 @@ export function esc(value = '') {
     .replace(/"/g, '&quot;');
 }
 
+/**
+ * Tokenize the same tiny inline-markdown subset `inlineMd` renders to HTML:
+ * `**bold**`, `*italic*`, `` `code` ``, line breaks. One consumer per output
+ * (HTML string vs. a native `<Text>` tree) means one markdown spec, not two.
+ * @param {string} [value]
+ * @returns {Array<{type: 'text'|'bold'|'italic'|'code'|'break', value?: string}>}
+ */
+export function inlineTokens(value = '') {
+  const tokens = [];
+  const lines = String(value).split('\n');
+  lines.forEach((line, i) => {
+    if (i > 0) tokens.push({ type: 'break' });
+    // Order matches inlineMd's replace chain: bold, then italic, then code.
+    const re = /\*\*(.+?)\*\*|(^|[^*])\*([^*]+?)\*|`(.+?)`/g;
+    let last = 0;
+    let match;
+    while ((match = re.exec(line))) {
+      if (match.index > last) tokens.push({ type: 'text', value: line.slice(last, match.index) });
+      if (match[1] !== undefined) {
+        tokens.push({ type: 'bold', value: match[1] });
+      } else if (match[3] !== undefined) {
+        if (match[2]) tokens.push({ type: 'text', value: match[2] });
+        tokens.push({ type: 'italic', value: match[3] });
+      } else {
+        tokens.push({ type: 'code', value: match[4] });
+      }
+      last = re.lastIndex;
+    }
+    if (last < line.length) tokens.push({ type: 'text', value: line.slice(last) });
+  });
+  return tokens;
+}
+
+const TAG = { bold: 'strong', italic: 'em', code: 'code' };
+
 /** Tiny inline markdown: **bold**, *italic*, `code`, line breaks. */
 export function inlineMd(value = '') {
-  return esc(value)
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/(^|[^*])\*([^*]+?)\*/g, '$1<em>$2</em>')
-    .replace(/`(.+?)`/g, '<code>$1</code>')
-    .replace(/\n/g, '<br>');
+  return inlineTokens(value)
+    .map((tok) => {
+      if (tok.type === 'break') return '<br>';
+      const text = esc(tok.value);
+      const tag = TAG[tok.type];
+      return tag ? `<${tag}>${text}</${tag}>` : text;
+    })
+    .join('');
 }
 
 export { KINDS, DEFAULT_BADGES };

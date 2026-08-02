@@ -1,6 +1,10 @@
-import { htmlDocument, u, imageBackground } from '../base.js';
-import { badge, badgeCss } from '../components.js';
-import { esc, inlineMd } from '@changelog-kit/core';
+import { h } from '../h.js';
+import { View, Text } from '@changelog-kit/templates/rn';
+import { themeFromContext } from '../theme.js';
+import { Badge } from '../components.js';
+import { ArtSlot } from '../image.js';
+import { RadialFill, LinearFill } from '../gradients.js';
+import { RichText } from '../text.js';
 
 /**
  * The release inside a device: a phone bezel holding the artwork, headline
@@ -14,63 +18,73 @@ export const deviceShowcase = {
   maxEntries: 4,
   render(ctx) {
     const { doc } = ctx;
+    const { u, theme } = themeFromContext(ctx);
     const entries = doc.entries.slice(0, 4);
-    const caption = (e) => `<div class="dev-cap">
-      ${badge(e)}
-      <h3 class="dev-cap-title">${inlineMd(e.title ?? '')}</h3>
-      ${e.body ? `<p class="dev-cap-text">${inlineMd(e.body)}</p>` : ''}
-    </div>`;
+    const onDark = theme.colors.onDark;
 
-    const body = `<div class="sheet dev">
-  <header class="dev-head">
-    <span class="dev-product">${esc(doc.product)} <b>${esc(doc.version)}</b></span>
-    ${doc.tagline ? `<p class="dev-tagline">${esc(doc.tagline)}</p>` : ''}
-  </header>
-  <div class="dev-stage">
-    <div class="dev-col">${entries.slice(0, 2).map(caption).join('')}</div>
-    <div class="dev-phone">
-      <div class="dev-screen" style="${imageBackground(doc.hero ?? entries[0]?.image)}"></div>
-      <span class="dev-notch"></span>
-    </div>
-    <div class="dev-col dev-col--right">${entries.slice(2, 4).map(caption).join('')}</div>
-  </div>
-  ${doc.footer ? `<p class="dev-footer">${esc(doc.footer)}</p>` : ''}
-</div>`;
+    const caption = (entry, i, align) =>
+      h(
+        View,
+        { key: i, style: { gap: u(8), alignItems: align === 'right' ? 'flex-end' : 'flex-start' } },
+        h(Badge, { entry, theme, u, fontSize: 15, paddingVertical: 5, paddingHorizontal: 12 }),
+        entry.title
+          ? h(RichText, { value: entry.title, style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(28), lineHeight: u(28) * 1.14, color: onDark, textAlign: align } })
+          : null,
+        entry.body ? h(RichText, { value: entry.body, style: { fontSize: u(21), lineHeight: u(21) * 1.3, opacity: 0.78, color: onDark, textAlign: align } }) : null
+      );
 
-    const css = `
-${badgeCss}
-.badge{font-size:${u(15)};padding:${u(5)} ${u(12)};}
-.dev{
-  background:radial-gradient(100% 70% at 50% 0%,var(--brand-color-heroFrom) 0%,var(--brand-color-heroTo) 72%);
-  color:var(--brand-color-onDark,#fff);align-items:center;text-align:center;gap:${u(24)};
-}
-.dev-head{display:flex;flex-direction:column;gap:${u(8)};align-items:center;}
-.dev-product{font-family:var(--brand-font-display);font-weight:600;font-size:${u(52)};letter-spacing:${u(-1)};line-height:1.06;white-space:nowrap;}
-.dev-product b{font-weight:800;}
-.dev-tagline{font-size:${u(26)};opacity:.85;max-width:${u(620)};text-wrap:pretty;}
-.dev-stage{
-  flex:1 1 auto;min-height:0;align-self:stretch;
-  display:grid;grid-template-columns:1fr 1.05fr 1fr;gap:${u(18)};align-items:center;
-}
-.dev-col{display:flex;flex-direction:column;gap:${u(22)};text-align:left;}
-.dev-col--right{text-align:right;align-items:flex-end;}
-.dev-col--right .badge{align-self:flex-end;}
-.dev-cap{display:flex;flex-direction:column;gap:${u(8)};}
-.dev-cap-title{font-family:var(--brand-font-display);font-weight:700;font-size:${u(28)};line-height:1.14;text-wrap:balance;}
-.dev-cap-text{font-size:${u(21)};line-height:1.3;opacity:.78;text-wrap:pretty;}
-.dev-phone{
-  position:relative;height:100%;max-height:${u(760)};aspect-ratio:9 / 19;justify-self:center;
-  border-radius:${u(54)};padding:${u(12)};
-  background:linear-gradient(160deg,rgba(255,255,255,.35),rgba(255,255,255,.08));
-  box-shadow:var(--brand-shadow-hero);
-}
-.dev-screen{width:100%;height:100%;border-radius:${u(44)};background-color:var(--brand-color-surfaceAlt);}
-.dev-notch{
-  position:absolute;top:${u(24)};left:50%;transform:translateX(-50%);
-  width:${u(120)};height:${u(20)};border-radius:${u(20)};background:rgba(0,0,0,.55);
-}
-.dev-footer{font-size:${u(18)};opacity:.65;}`;
-    return htmlDocument(ctx, { css, body });
+    const phone = h(
+      View,
+      {
+        style: {
+          position: 'relative',
+          flexGrow: 1.05,
+          alignSelf: 'center',
+          aspectRatio: 9 / 19,
+          maxHeight: u(760),
+          borderRadius: u(54),
+          padding: u(12),
+          boxShadow: theme.shadow.hero
+        }
+      },
+      h(LinearFill, { colors: ['rgba(255,255,255,.35)', 'rgba(255,255,255,.08)'], angle: 160, borderRadius: u(54) }),
+      // The screen sits inset within the bezel's own padding (revealing the
+      // gradient behind as a frame), so `ArtSlot`'s absolute-fill default is
+      // overridden to size it via the bezel's own flex layout instead.
+      h(ArtSlot, {
+        image: doc.hero ?? entries[0]?.image,
+        theme,
+        resolveImageSource: ctx.resolveImageSource,
+        borderRadius: u(44),
+        style: { position: 'relative', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }
+      }),
+      h(View, { style: { position: 'absolute', top: u(24), left: 0, right: 0, alignItems: 'center' } }, h(View, { style: { width: u(120), height: u(20), borderRadius: u(20), backgroundColor: 'rgba(0,0,0,.55)' } }))
+    );
+
+    return h(
+      View,
+      { style: { width: ctx.size.width, height: ctx.size.height, overflow: 'hidden', padding: theme.spacing.outer, gap: u(24), alignItems: 'center' } },
+      h(RadialFill, { colors: [theme.colors.heroFrom, theme.colors.heroTo], cx: '50%', cy: '0%', r: '80%' }),
+      h(
+        View,
+        { style: { alignItems: 'center', gap: u(8) } },
+        h(
+          Text,
+          { style: { fontFamily: theme.fonts.display, fontWeight: '600', fontSize: u(52), letterSpacing: u(-1), lineHeight: u(52) * 1.06, color: onDark, textAlign: 'center' } },
+          `${doc.product} `,
+          h(Text, { style: { fontWeight: '800' } }, doc.version)
+        ),
+        doc.tagline ? h(Text, { style: { fontSize: u(26), opacity: 0.85, maxWidth: u(620), color: onDark, textAlign: 'center' } }, doc.tagline) : null
+      ),
+      h(
+        View,
+        { style: { flex: 1, minHeight: 0, alignSelf: 'stretch', flexDirection: 'row', gap: u(18), alignItems: 'center' } },
+        h(View, { style: { flex: 1, gap: u(22) } }, ...entries.slice(0, 2).map((e, i) => caption(e, i, 'left'))),
+        phone,
+        h(View, { style: { flex: 1, gap: u(22), alignItems: 'flex-end' } }, ...entries.slice(2, 4).map((e, i) => caption(e, i, 'right')))
+      ),
+      doc.footer ? h(Text, { style: { fontSize: u(18), opacity: 0.65, color: onDark } }, doc.footer) : null
+    );
   }
 };
 

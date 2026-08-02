@@ -3,6 +3,7 @@ import path from 'node:path';
 import { ChangelogKit } from '@changelog-kit/core';
 import { builtinTemplates } from '@changelog-kit/templates';
 import { PlaywrightRenderer } from '@changelog-kit/renderer-playwright';
+import { toStaticHtml } from '@changelog-kit/render-web';
 import { MockImageProvider, CachedProvider } from '@changelog-kit/ai-images';
 import brand from './octobot.brand.js';
 
@@ -14,6 +15,7 @@ const kit = new ChangelogKit({
   brand,
   templates: builtinTemplates,
   renderer: new PlaywrightRenderer(),
+  serializer: toStaticHtml,
   imageProvider: new CachedProvider(new MockImageProvider()),
   onEvent: (event, p) => console.log(event, p.template ?? p.key ?? '')
 });

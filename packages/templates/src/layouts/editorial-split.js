@@ -1,6 +1,10 @@
-import { htmlDocument, u, imageBackground } from '../base.js';
-import { badge, badgeCss } from '../components.js';
-import { esc, inlineMd } from '@changelog-kit/core';
+import { h } from '../h.js';
+import { View, Text } from '@changelog-kit/templates/rn';
+import { themeFromContext } from '../theme.js';
+import { Canvas } from '../canvas.js';
+import { Badge } from '../components.js';
+import { ArtSlot } from '../image.js';
+import { RichText } from '../text.js';
 
 /**
  * Magazine spread: a tall art column, a kicker rule, an oversized version and
@@ -14,70 +18,84 @@ export const editorialSplit = {
   maxEntries: 5,
   render(ctx) {
     const { doc } = ctx;
+    const { u, theme } = themeFromContext(ctx);
     const entries = doc.entries.slice(0, 5);
-    const body = `<div class="sheet ed">
-  <div class="ed-kicker">
-    <span>${esc(doc.product)}</span>
-    <span class="ed-rule"></span>
-    <span>${esc(doc.date || doc.tagline)}</span>
-  </div>
-  <div class="ed-cols">
-    <div class="ed-main">
-      <h1 class="ed-version"><span class="ed-v">v</span>${esc(doc.version)}</h1>
-      ${doc.tagline ? `<p class="ed-lede">${esc(doc.tagline)}</p>` : ''}
-      <ol class="ed-list">
-        ${entries.map((e, i) => `<li class="ed-item">
-          <span class="ed-index">${String(i + 1).padStart(2, '0')}</span>
-          <div class="ed-copy">
-            <div class="ed-line">${badge(e)}<h3 class="ed-title">${inlineMd(e.title ?? '')}</h3></div>
-            ${e.body ? `<p class="ed-text">${inlineMd(e.body)}</p>` : ''}
-          </div>
-        </li>`).join('')}
-      </ol>
-    </div>
-    <aside class="ed-aside">
-      <div class="ed-art" style="${imageBackground(doc.hero ?? entries[0]?.image)}"></div>
-    </aside>
-  </div>
-  ${doc.footer ? `<p class="ed-footer">${esc(doc.footer)}</p>` : ''}
-</div>`;
 
-    const css = `
-${badgeCss}
-.badge{font-size:${u(15)};padding:${u(5)} ${u(12)};}
-.ed{gap:${u(22)};}
-.ed-kicker{
-  display:flex;align-items:center;gap:${u(16)};
-  font-family:var(--brand-font-display);font-weight:600;font-size:${u(20)};
-  letter-spacing:${u(2)};text-transform:uppercase;color:var(--brand-color-inkMuted);
-}
-.ed-rule{flex:1 1 auto;height:${u(1)};background:var(--brand-color-inkMuted);opacity:.4;}
-.ed-cols{flex:1 1 auto;display:grid;grid-template-columns:1.12fr .88fr;gap:calc(var(--brand-space-gap) * var(--u));min-height:0;}
-.ed-main{display:flex;flex-direction:column;gap:${u(14)};min-height:0;}
-.ed-version{
-  font-family:var(--brand-font-display);font-weight:800;font-size:${u(150)};line-height:.82;
-  letter-spacing:${u(-7)};display:flex;align-items:flex-start;
-}
-.ed-v{font-size:${u(52)};font-weight:600;letter-spacing:0;color:var(--brand-color-primary);margin-top:${u(14)};}
-.ed-lede{font-size:${u(26)};line-height:1.3;color:var(--brand-color-inkMuted);max-width:${u(460)};text-wrap:pretty;}
-.ed-list{list-style:none;display:flex;flex-direction:column;margin-top:${u(6)};flex:1 1 auto;min-height:0;}
-.ed-item{display:flex;gap:${u(16)};padding:${u(16)} 0;border-top:${u(1)} solid var(--brand-color-inkMuted);flex:1 1 auto;align-items:center;}
-.ed-item:last-child{border-bottom:${u(1)} solid var(--brand-color-inkMuted);}
-.ed-index{
-  font-family:var(--brand-font-display);font-weight:700;font-size:${u(18)};
-  color:var(--brand-color-primary);min-width:${u(34)};
-}
-.ed-copy{display:flex;flex-direction:column;gap:${u(6)};min-width:0;}
-.ed-line{display:flex;align-items:center;gap:${u(12)};flex-wrap:wrap;}
-.ed-title{font-family:var(--brand-font-display);font-weight:700;font-size:${u(28)};line-height:1.14;text-wrap:balance;}
-.ed-text{font-size:${u(21)};line-height:1.32;color:var(--brand-color-inkMuted);text-wrap:pretty;}
-.ed-aside{display:flex;min-height:0;}
-.ed-art{
-  flex:1 1 auto;border-radius:calc(var(--brand-radius-hero) * var(--u));
-  box-shadow:var(--brand-shadow-hero);
-}
-.ed-footer{font-size:${u(18)};color:var(--brand-color-inkMuted);}`;
-    return htmlDocument(ctx, { css, body });
+    const kicker = h(
+      View,
+      { style: { flexDirection: 'row', alignItems: 'center', gap: u(16) } },
+      h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '600', fontSize: u(20), letterSpacing: u(2), textTransform: 'uppercase', color: theme.colors.inkMuted } }, doc.product),
+      h(View, { style: { flex: 1, height: u(1), backgroundColor: theme.colors.inkMuted, opacity: 0.4 } }),
+      h(
+        Text,
+        { style: { fontFamily: theme.fonts.display, fontWeight: '600', fontSize: u(20), letterSpacing: u(2), textTransform: 'uppercase', color: theme.colors.inkMuted } },
+        doc.date || doc.tagline
+      )
+    );
+
+    const list = h(
+      View,
+      { style: { flex: 1, minHeight: 0, marginTop: u(6) } },
+      ...entries.map((entry, i) =>
+        h(
+          View,
+          {
+            key: i,
+            style: {
+              flexDirection: 'row',
+              gap: u(16),
+              paddingVertical: u(16),
+              alignItems: 'center',
+              flex: 1,
+              borderTopWidth: u(1),
+              borderTopColor: theme.colors.inkMuted,
+              ...(i === entries.length - 1 ? { borderBottomWidth: u(1), borderBottomColor: theme.colors.inkMuted } : {})
+            }
+          },
+          h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(18), color: theme.colors.primary, minWidth: u(34) } }, String(i + 1).padStart(2, '0')),
+          h(
+            View,
+            { style: { flex: 1, minWidth: 0, gap: u(6) } },
+            h(
+              View,
+              { style: { flexDirection: 'row', alignItems: 'center', gap: u(12), flexWrap: 'wrap' } },
+              h(Badge, { entry, theme, u, fontSize: 15, paddingVertical: 5, paddingHorizontal: 12 }),
+              entry.title
+                ? h(RichText, { value: entry.title, style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(28), lineHeight: u(28) * 1.14, color: theme.colors.ink } })
+                : null
+            ),
+            entry.body ? h(RichText, { value: entry.body, style: { fontSize: u(21), lineHeight: u(21) * 1.32, color: theme.colors.inkMuted } }) : null
+          )
+        )
+      )
+    );
+
+    const main = h(
+      View,
+      { style: { flex: 1.12, minHeight: 0, gap: u(14) } },
+      h(
+        View,
+        { style: { flexDirection: 'row', alignItems: 'flex-start' } },
+        h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '600', fontSize: u(52), color: theme.colors.primary, marginTop: u(14) } }, 'v'),
+        h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '800', fontSize: u(150), lineHeight: u(150) * 0.82, letterSpacing: u(-7), color: theme.colors.ink } }, doc.version)
+      ),
+      doc.tagline ? h(Text, { style: { fontSize: u(26), lineHeight: u(26) * 1.3, color: theme.colors.inkMuted, maxWidth: u(460) } }, doc.tagline) : null,
+      list
+    );
+
+    const aside = h(
+      View,
+      { style: { flex: 0.88, minHeight: 0 } },
+      h(ArtSlot, { image: doc.hero ?? entries[0]?.image, theme, resolveImageSource: ctx.resolveImageSource, borderRadius: theme.radius.hero, style: { position: 'relative', flex: 1, boxShadow: theme.shadow.hero } })
+    );
+
+    return h(
+      Canvas,
+      { size: ctx.size, theme, style: { gap: u(22) } },
+      kicker,
+      h(View, { style: { flex: 1, flexDirection: 'row', gap: theme.spacing.gap, minHeight: 0 } }, main, aside),
+      doc.footer ? h(Text, { style: { fontSize: u(18), color: theme.colors.inkMuted } }, doc.footer) : null
+    );
   }
 };
 

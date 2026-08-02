@@ -1,6 +1,10 @@
-import { htmlDocument, u, imageBackground } from '../base.js';
-import { badge, badgeCss } from '../components.js';
-import { esc, inlineMd } from '@changelog-kit/core';
+import { h } from '../h.js';
+import { View, Text } from '@changelog-kit/templates/rn';
+import { themeFromContext } from '../theme.js';
+import { Badge } from '../components.js';
+import { ArtSlot } from '../image.js';
+import { LinearFill, RadialFill } from '../gradients.js';
+import { RichText } from '../text.js';
 
 /**
  * The in-product "What's new" sheet: a modal card over a tinted backdrop,
@@ -15,83 +19,105 @@ export const whatsNewSheet = {
   maxEntries: 4,
   render(ctx) {
     const { doc } = ctx;
+    const { u, theme } = themeFromContext(ctx);
     const entries = doc.entries.slice(0, 4);
     const cta = doc.meta?.cta ?? (doc.status === 'upcoming' ? 'Notify me' : 'See what changed');
+    const onDark = theme.colors.onDark;
 
-    const body = `<div class="wrap">
-  <div class="wrap-glow"></div>
-  <section class="sheetcard">
-    <div class="sc-grip"></div>
-    <header class="sc-head">
-      <span class="sc-chip">${esc(doc.product)} ${esc(doc.version)}</span>
-      <h1 class="sc-title">What&rsquo;s new</h1>
-      ${doc.tagline ? `<p class="sc-lede">${esc(doc.tagline)}</p>` : ''}
-    </header>
-    <ul class="sc-rows">
-      ${entries.map((e) => `<li class="sc-row">
-        <span class="sc-icon" style="${e.image ? imageBackground(e.image) : ''}"></span>
-        <div class="sc-copy">
-          <div class="sc-line">${badge(e)}<h3 class="sc-row-title">${inlineMd(e.title ?? '')}</h3></div>
-          ${e.body ? `<p class="sc-row-text">${inlineMd(e.body)}</p>` : ''}
-        </div>
-      </li>`).join('')}
-    </ul>
-    <footer class="sc-foot">
-      <span class="sc-cta">${esc(cta)}</span>
-      ${doc.footer ? `<span class="sc-note">${esc(doc.footer)}</span>` : ''}
-    </footer>
-  </section>
-</div>`;
+    const glow = h(
+      View,
+      { style: { position: 'absolute', width: '130%', aspectRatio: 1, left: '-15%', top: '-42%', borderRadius: 99999, opacity: 0.35, overflow: 'hidden' } },
+      h(RadialFill, { colors: [{ color: theme.colors.primary, offset: '0%' }, { color: 'transparent', offset: '62%' }] })
+    );
 
-    const css = `
-${badgeCss}
-.badge{font-size:${u(15)};padding:${u(5)} ${u(12)};}
-.wrap{
-  position:relative;width:var(--w);height:var(--h);overflow:hidden;
-  display:flex;align-items:flex-end;justify-content:center;
-  padding:calc(var(--brand-space-outer) * var(--u));
-  background:linear-gradient(190deg,var(--brand-color-heroFrom) 0%,var(--brand-color-heroTo) 74%);
-}
-.wrap-glow{
-  position:absolute;width:130%;aspect-ratio:1;left:-15%;top:-42%;border-radius:99999px;
-  background:radial-gradient(circle,var(--brand-color-primary) 0%,transparent 62%);opacity:.35;
-}
-.sheetcard{
-  position:relative;z-index:2;width:100%;max-height:100%;min-height:74%;
-  display:flex;flex-direction:column;gap:${u(22)};
-  background:var(--brand-color-surface);color:var(--brand-color-ink);
-  border-radius:calc(var(--brand-radius-hero) * var(--u));
-  box-shadow:var(--brand-shadow-hero);
-  padding:${u(30)} ${u(30)} ${u(26)};
-}
-.sc-grip{width:${u(72)};height:${u(7)};border-radius:99px;background:var(--brand-color-inkMuted);opacity:.35;align-self:center;}
-.sc-head{display:flex;flex-direction:column;gap:${u(8)};}
-.sc-chip{
-  align-self:flex-start;font-family:var(--brand-font-display);font-weight:700;font-size:${u(19)};
-  padding:${u(7)} ${u(16)};border-radius:calc(var(--brand-radius-badge) * var(--u));
-  background:var(--brand-color-primary);color:var(--brand-color-surfaceAlt);
-}
-.sc-title{font-family:var(--brand-font-display);font-weight:800;font-size:${u(58)};line-height:1.02;letter-spacing:${u(-1.6)};}
-.sc-lede{font-size:${u(24)};line-height:1.32;color:var(--brand-color-inkMuted);text-wrap:pretty;}
-.sc-rows{list-style:none;display:flex;flex-direction:column;gap:${u(18)};flex:1 1 auto;min-height:0;justify-content:center;}
-.sc-row{display:flex;gap:${u(16)};align-items:center;}
-.sc-icon{
-  flex:0 0 ${u(84)};height:${u(84)};border-radius:calc(var(--brand-radius-image) * var(--u));
-  background-color:var(--brand-color-heroFrom);
-}
-.sc-copy{display:flex;flex-direction:column;gap:${u(5)};min-width:0;}
-.sc-line{display:flex;align-items:center;gap:${u(10)};flex-wrap:wrap;}
-.sc-row-title{font-family:var(--brand-font-display);font-weight:700;font-size:${u(28)};line-height:1.1;}
-.sc-row-text{font-size:${u(21)};line-height:1.3;color:var(--brand-color-inkMuted);text-wrap:pretty;}
-.sc-foot{display:flex;flex-direction:column;align-items:center;gap:${u(12)};}
-.sc-cta{
-  align-self:stretch;text-align:center;
-  font-family:var(--brand-font-display);font-weight:700;font-size:${u(26)};
-  padding:${u(20)};border-radius:calc(var(--brand-radius-card) * var(--u));
-  background:var(--brand-color-surfaceAlt);color:var(--brand-color-onDark,#fff);
-}
-.sc-note{font-size:${u(17)};color:var(--brand-color-inkMuted);}`;
-    return htmlDocument(ctx, { css, body });
+    const rows = h(
+      View,
+      { style: { flex: 1, minHeight: 0, flexDirection: 'column', gap: u(18), justifyContent: 'center' } },
+      ...entries.map((entry, i) => {
+        const icon = entry.image
+          ? h(ArtSlot, { image: entry.image, theme, resolveImageSource: ctx.resolveImageSource, borderRadius: theme.radius.image, style: { position: 'relative', flexGrow: 0, flexShrink: 0, width: u(84), height: u(84) } })
+          : h(View, { style: { flexGrow: 0, flexShrink: 0, width: u(84), height: u(84), borderRadius: theme.radius.image, backgroundColor: theme.colors.heroFrom } });
+        return h(
+          View,
+          { key: i, style: { flexDirection: 'row', gap: u(16), alignItems: 'center' } },
+          icon,
+          h(
+            View,
+            { style: { flex: 1, minWidth: 0, gap: u(5) } },
+            h(
+              View,
+              { style: { flexDirection: 'row', alignItems: 'center', gap: u(10), flexWrap: 'wrap' } },
+              h(Badge, { entry, theme, u, fontSize: 15, paddingVertical: 5, paddingHorizontal: 12 }),
+              h(RichText, { value: entry.title ?? '', style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(28), lineHeight: u(28) * 1.1, color: theme.colors.ink } })
+            ),
+            entry.body
+              ? h(RichText, { value: entry.body, style: { fontSize: u(21), lineHeight: u(21) * 1.3, color: theme.colors.inkMuted } })
+              : null
+          )
+        );
+      })
+    );
+
+    const sheetcard = h(
+      View,
+      {
+        style: {
+          width: '100%',
+          maxHeight: '100%',
+          minHeight: '74%',
+          flexDirection: 'column',
+          gap: u(22),
+          backgroundColor: theme.colors.surface,
+          borderRadius: theme.radius.hero,
+          boxShadow: theme.shadow.hero,
+          paddingTop: u(30),
+          paddingHorizontal: u(30),
+          paddingBottom: u(26)
+        }
+      },
+      h(View, { style: { width: u(72), height: u(7), borderRadius: 99, backgroundColor: theme.colors.inkMuted, opacity: 0.35, alignSelf: 'center' } }),
+      h(
+        View,
+        { style: { gap: u(8) } },
+        h(
+          View,
+          { style: { alignSelf: 'flex-start', backgroundColor: theme.colors.primary, borderRadius: theme.radius.badge, paddingVertical: u(7), paddingHorizontal: u(16) } },
+          h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(19), color: theme.colors.surfaceAlt } }, `${doc.product} ${doc.version}`)
+        ),
+        h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '800', fontSize: u(58), lineHeight: u(58) * 1.02, letterSpacing: u(-1.6), color: theme.colors.ink } }, 'What’s new'),
+        doc.tagline
+          ? h(Text, { style: { fontSize: u(24), lineHeight: u(24) * 1.32, color: theme.colors.inkMuted } }, doc.tagline)
+          : null
+      ),
+      rows,
+      h(
+        View,
+        { style: { alignItems: 'center', gap: u(12) } },
+        h(
+          View,
+          { style: { alignSelf: 'stretch', borderRadius: theme.radius.card, backgroundColor: theme.colors.surfaceAlt, padding: u(20) } },
+          h(Text, { style: { textAlign: 'center', fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(26), color: onDark } }, cta)
+        ),
+        doc.footer ? h(Text, { style: { fontSize: u(17), color: theme.colors.inkMuted } }, doc.footer) : null
+      )
+    );
+
+    return h(
+      View,
+      {
+        style: {
+          width: ctx.size.width,
+          height: ctx.size.height,
+          overflow: 'hidden',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          padding: theme.spacing.outer
+        }
+      },
+      h(LinearFill, { colors: [{ color: theme.colors.heroFrom, offset: '0%' }, { color: theme.colors.heroTo, offset: '74%' }], angle: 190 }),
+      glow,
+      sheetcard
+    );
   }
 };
 

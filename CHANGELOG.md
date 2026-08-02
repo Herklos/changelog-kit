@@ -8,6 +8,22 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **React Native support.** `@changelog-kit/templates` is rewritten from the
+  ground up: every layout is now a pure `(ctx) => ReactElement` — no HTML, no
+  CSS — and the package exports a `<Changelog>` component so an RN/Expo app
+  can install it directly and render a changelog as live UI. See the
+  README's "React Native" section.
+- **`@changelog-kit/render-web`** — the new home for what used to live in
+  `templates`' HTML shell: `react-native-web` + `react-dom/server` turn a
+  template's React element into a full HTML document, so
+  `renderer-playwright` keeps producing png/jpg/webp/pdf unchanged. `cli` and
+  `examples/generate.mjs` wire it in as `ChangelogKit`'s `serializer` option.
+- `examples/native/` — a minimal Expo app demonstrating `<Changelog>` (template
+  switcher, `baseWidth`/`scroll` toggles).
+- `@changelog-kit/core`: `inlineTokens(str)` — tokenizes the tiny inline
+  markdown subset (`**bold**`, `*italic*`, `` `code` ``, line breaks) that
+  `inlineMd()` serializes to HTML; `templates`' `RichText` renders the same
+  tokens into native `<Text>`. One markdown spec, two backends.
 - Ten more layouts: `duotone-cover`, `editorial-split`, `card-deck`,
   `metric-cards`, `timeline-rail`, `split-diagonal`, `device-showcase`,
   `mega-type`, `ticket-stub` and `whats-new-sheet` (twenty built-ins total).
@@ -15,11 +31,44 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
+- **Breaking: the `Template.render(ctx)` contract.** It now returns a React
+  element instead of an HTML string. `ChangelogKit` gained a `serializer`
+  option (`(element, ctx) => html`) — required for any `render()`/`generate()`
+  call that isn't `format: 'html'` against a plain element; pass
+  `@changelog-kit/render-web`'s `toStaticHtml`, as `cli` and the examples now
+  do. Custom templates written against the old `htmlDocument()`/`card()`/
+  `cardCss`/`u()` HTML-string helpers (all removed) need rewriting — see the
+  README's "Templates" section for the new shape.
+- **Breaking: `inlineMd()` no longer nests emphasis inside bold.** The old
+  regex chain accidentally allowed `**bold *italic* still bold**` to render a
+  nested `<em>`; tokenizing (see `inlineTokens()` above) makes bold opaque.
+  This was never a documented feature ("a tiny subset of markdown"), and no
+  known content relied on it.
 - OctoBot brand kits rebuilt on the Drakkar Software charte graphique:
   bleu-sombre `#0f1237`, blanc-perle `#f3f6f8`, bleu-givré `#85d6d7`,
   turquoise `#65e7cf`, bleu-octobot `#5ba0cc`, DM Sans typography.
-- `badgeCss` extracted from `cardCss` so badge-only layouts style correctly;
-  `story-stack` and `teaser-poster` paint their own sheet instead of `body`.
+- `story-stack` and `teaser-poster` (and now `whats-new-sheet`,
+  `duotone-cover`, `spotlight`, `card-deck`, `device-showcase`,
+  `split-diagonal`) paint their own full-bleed root instead of relying on a
+  shared canvas background — see `Canvas` in `packages/templates/src/canvas.js`
+  for the layouts that don't need to.
+
+### Known limitations of the React Native port
+
+- `backdrop-filter` (used for a frosted-glass chip/scrim in `spotlight` and
+  `split-diagonal`) has no RN or react-native-web equivalent — both layouts
+  fall back to a plain translucent fill, no blur.
+- `bento-mosaic`'s CSS Grid auto-placement (explicit `grid-column`/
+  `grid-row` spans) is approximated with nested flex rows and `flexGrow`
+  ratios standing in for spans — visually equivalent for the shipped entry
+  counts, not a pixel-identical port.
+- `card-deck`'s per-card `translateY(±3%)` nudge is dropped — RN transforms
+  need fixed pixel offsets, not percentages of an unmeasured height. The
+  rotation-based fan effect is unaffected.
+- `feature-grid`/`metric-cards`' 2-column grids use `flexWrap` with a
+  percentage `flexBasis`; unlike CSS Grid, flexbox doesn't subtract the row
+  gap from the track size, so a full row can overrun its container by one
+  gap's width — silently clipped by the canvas's `overflow:hidden`.
 
 ## [0.1.0] — 2026-08-01
 

@@ -1,6 +1,8 @@
-import { htmlDocument, u } from '../base.js';
-import { badgeCss } from '../components.js';
-import { esc, inlineMd } from '@changelog-kit/core';
+import { h } from '../h.js';
+import { View, Text } from '@changelog-kit/templates/rn';
+import { themeFromContext } from '../theme.js';
+import { Canvas } from '../canvas.js';
+import { RichText } from '../text.js';
 
 /** Pull the most quotable number out of an entry ("10× faster" → "10×"). */
 function statOf(entry, index) {
@@ -9,6 +11,8 @@ function statOf(entry, index) {
   const match = source.match(/(\d+[\d.,]*\s*(?:×|x\b|%|k\b|\+)?)/i);
   return match ? match[1].replace(/\s+/g, '').replace(/x$/i, '×') : String(index + 1).padStart(2, '0');
 }
+
+const ACCENT_KEY = { update: 'update', bugfix: 'bugfix', improvement: 'improvement', soon: 'soon' };
 
 /**
  * "By the numbers": the release as three or four oversized figures. Reads in
@@ -22,65 +26,58 @@ export const metricCards = {
   maxEntries: 4,
   render(ctx) {
     const { doc } = ctx;
+    const { u, theme } = themeFromContext(ctx);
     const entries = doc.entries.slice(0, 4);
-    const body = `<div class="sheet metrics">
-  <header class="m-head">
-    <div class="m-title">
-      <span class="m-product">${esc(doc.product)}</span>
-      <span class="m-version">${esc(doc.version)}</span>
-    </div>
-    ${doc.tagline ? `<p class="m-tagline">${esc(doc.tagline)}</p>` : ''}
-  </header>
-  <div class="m-grid">
-    ${entries.map((e, i) => `<article class="m-card m-card--${e.kind}">
-      <span class="m-stat">${esc(statOf(e, i))}</span>
-      <h3 class="m-label">${inlineMd(e.title ?? '')}</h3>
-      ${e.body ? `<p class="m-note">${inlineMd(e.body)}</p>` : ''}
-      <span class="m-kind">${esc(e.badge ?? '')}</span>
-    </article>`).join('')}
-  </div>
-  ${doc.footer ? `<p class="m-footer">${esc(doc.footer)}</p>` : ''}
-</div>`;
 
-    const css = `
-${badgeCss}
-.metrics{gap:calc(var(--brand-space-gap) * var(--u));}
-.m-head{display:flex;flex-direction:column;gap:${u(6)};}
-.m-title{display:flex;align-items:baseline;gap:${u(14)};}
-.m-product{font-family:var(--brand-font-display);font-weight:700;font-size:${u(44)};letter-spacing:${u(-1)};}
-.m-version{
-  font-family:var(--brand-font-display);font-weight:800;font-size:${u(44)};
-  color:var(--brand-color-primary);
-}
-.m-tagline{font-size:${u(24)};color:var(--brand-color-inkMuted);}
-.m-grid{flex:1 1 auto;display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--brand-space-gap) * var(--u));min-height:0;}
-.m-card{
-  position:relative;display:flex;flex-direction:column;justify-content:center;gap:${u(6)};
-  background:var(--brand-color-surface);
-  border-radius:calc(var(--brand-radius-card) * var(--u));
-  box-shadow:var(--brand-shadow-card);padding:${u(28)};overflow:hidden;min-height:0;
-}
-.m-card::before{
-  content:'';position:absolute;inset:auto 0 0 0;height:${u(6)};
-  background:var(--brand-color-primary);
-}
-.m-card--update::before{background:var(--brand-color-badge-update);}
-.m-card--bugfix::before{background:var(--brand-color-badge-bugfix);}
-.m-card--improvement::before{background:var(--brand-color-badge-improvement);}
-.m-card--soon::before{background:var(--brand-color-badge-soon);}
-.m-stat{
-  font-family:var(--brand-font-display);font-weight:800;font-size:${u(118)};line-height:.86;
-  letter-spacing:${u(-5)};color:var(--brand-color-primary);margin-bottom:${u(6)};
-}
-.m-label{font-family:var(--brand-font-display);font-weight:700;font-size:${u(30)};line-height:1.12;text-wrap:balance;}
-.m-note{font-size:${u(21)};line-height:1.3;color:var(--brand-color-inkMuted);text-wrap:pretty;}
-.m-kind{
-  position:absolute;top:${u(24)};right:${u(24)};
-  font-family:var(--brand-font-display);font-weight:700;font-size:${u(16)};
-  letter-spacing:${u(1.4)};color:var(--brand-color-inkMuted);
-}
-.m-footer{font-size:${u(18)};color:var(--brand-color-inkMuted);}`;
-    return htmlDocument(ctx, { css, body });
+    const header = h(
+      View,
+      { style: { gap: u(6) } },
+      h(
+        View,
+        { style: { flexDirection: 'row', alignItems: 'baseline', gap: u(14) } },
+        doc.product ? h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(44), letterSpacing: u(-1), color: theme.colors.ink } }, doc.product) : null,
+        h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '800', fontSize: u(44), color: theme.colors.primary } }, doc.version)
+      ),
+      doc.tagline ? h(Text, { style: { fontSize: u(24), color: theme.colors.inkMuted } }, doc.tagline) : null
+    );
+
+    const grid = h(
+      View,
+      { style: { flex: 1, minHeight: 0, flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.gap } },
+      ...entries.map((entry, i) =>
+        h(
+          View,
+          { key: i, style: { flexBasis: '50%', flexGrow: 0, flexShrink: 0 } },
+          h(
+            View,
+            {
+              style: {
+                position: 'relative',
+                justifyContent: 'center',
+                gap: u(6),
+                backgroundColor: theme.colors.surface,
+                borderRadius: theme.radius.card,
+                boxShadow: theme.shadow.card,
+                padding: u(28),
+                overflow: 'hidden',
+                minHeight: u(180)
+              }
+            },
+            h(View, { style: { position: 'absolute', left: 0, right: 0, bottom: 0, height: u(6), backgroundColor: theme.colors.badge[ACCENT_KEY[entry.kind]] ?? theme.colors.primary } }),
+            h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '800', fontSize: u(118), lineHeight: u(118) * 0.86, letterSpacing: u(-5), color: theme.colors.primary, marginBottom: u(6) } }, statOf(entry, i)),
+            entry.title
+              ? h(RichText, { value: entry.title, style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(30), lineHeight: u(30) * 1.12, color: theme.colors.ink } })
+              : null,
+            entry.body ? h(RichText, { value: entry.body, style: { fontSize: u(21), lineHeight: u(21) * 1.3, color: theme.colors.inkMuted } }) : null,
+            entry.badge
+              ? h(Text, { style: { position: 'absolute', top: u(24), right: u(24), fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(16), letterSpacing: u(1.4), color: theme.colors.inkMuted } }, entry.badge)
+              : null
+          )
+        )
+      )
+    );
+
+    return h(Canvas, { size: ctx.size, theme }, header, grid, doc.footer ? h(Text, { style: { fontSize: u(18), color: theme.colors.inkMuted } }, doc.footer) : null);
   }
 };
 

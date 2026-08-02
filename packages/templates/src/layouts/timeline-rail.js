@@ -1,10 +1,23 @@
-import { htmlDocument, u, imageBackground } from '../base.js';
-import { badge, badgeCss } from '../components.js';
-import { esc, inlineMd } from '@changelog-kit/core';
+import { h } from '../h.js';
+import { View, Text } from '@changelog-kit/templates/rn';
+import { themeFromContext } from '../theme.js';
+import { Canvas } from '../canvas.js';
+import { Badge } from '../components.js';
+import { ArtSlot } from '../image.js';
+import { RichText } from '../text.js';
+
+const NODE_COLOR_KEY = { update: 'update', bugfix: 'bugfix', improvement: 'improvement', soon: 'soon' };
+const GUTTER = 32;
 
 /**
  * Vertical rail: a connector line with a node per change. Reads as a journey,
  * which suits multi-part releases and roadmap posts.
+ *
+ * The original centered each node with `top:50%; transform:translateY(-50%)`
+ * inside a variable-height row — RN transforms need fixed pixel offsets, not
+ * percentages of an unmeasured height. Each node is a normal flex sibling in
+ * a centered gutter column instead, which centers correctly without a
+ * measured height and needs no transform at all.
  */
 export const timelineRail = {
   id: 'timeline-rail',
@@ -14,71 +27,64 @@ export const timelineRail = {
   maxEntries: 6,
   render(ctx) {
     const { doc } = ctx;
+    const { u, theme } = themeFromContext(ctx);
     const entries = doc.entries.slice(0, 6);
-    const body = `<div class="sheet rail">
-  <header class="rail-head">
-    <div class="rail-headline">
-      <span class="rail-product">${esc(doc.product)}</span>
-      <span class="rail-version">${esc(doc.version)}</span>
-    </div>
-    ${doc.hero?.src ? `<div class="rail-art" style="${imageBackground(doc.hero)}"></div>` : ''}
-    ${doc.tagline ? `<p class="rail-tagline">${esc(doc.tagline)}</p>` : ''}
-  </header>
-  <ol class="rail-list" style="--rail-inset:${(50 / Math.max(entries.length, 1)).toFixed(2)}%">
-    ${entries.map((e) => `<li class="rail-item">
-      <span class="rail-node rail-node--${e.kind}"></span>
-      <div class="rail-card">
-        <div class="rail-line">${badge(e)}<h3 class="rail-title">${inlineMd(e.title ?? '')}</h3></div>
-        ${e.body ? `<p class="rail-text">${inlineMd(e.body)}</p>` : ''}
-      </div>
-    </li>`).join('')}
-  </ol>
-  ${doc.footer ? `<p class="rail-footer">${esc(doc.footer)}</p>` : ''}
-</div>`;
+    const inset = `${(50 / Math.max(entries.length, 1)).toFixed(2)}%`;
 
-    const css = `
-${badgeCss}
-.badge{font-size:${u(16)};padding:${u(5)} ${u(13)};}
-.rail{gap:${u(22)};}
-.rail-head{display:flex;flex-direction:column;gap:${u(14)};}
-.rail-headline{display:flex;align-items:baseline;gap:${u(16)};}
-.rail-product{font-family:var(--brand-font-display);font-weight:700;font-size:${u(46)};letter-spacing:${u(-1)};}
-.rail-version{
-  font-family:var(--brand-font-display);font-weight:800;font-size:${u(104)};line-height:.9;
-  letter-spacing:${u(-4)};color:var(--brand-color-primary);
-}
-.rail-art{height:${u(280)};border-radius:calc(var(--brand-radius-hero) * var(--u));box-shadow:var(--brand-shadow-hero);}
-.rail-tagline{font-size:${u(26)};color:var(--brand-color-inkMuted);text-wrap:pretty;}
-.rail-list{
-  list-style:none;position:relative;flex:1 1 auto;min-height:0;
-  display:flex;flex-direction:column;gap:${u(16)};padding-left:${u(46)};
-}
-.rail-list::before{
-  content:'';position:absolute;left:${u(15)};top:var(--rail-inset);bottom:var(--rail-inset);width:${u(2)};
-  background:var(--brand-color-inkMuted);opacity:.35;
-}
-.rail-item{position:relative;display:flex;flex:1 1 auto;min-height:0;}
-.rail-node{
-  position:absolute;left:${u(-38)};top:50%;transform:translateY(-50%);
-  width:${u(16)};height:${u(16)};border-radius:99px;
-  background:var(--brand-color-primary);
-  box-shadow:0 0 0 ${u(6)} var(--brand-color-canvas);
-}
-.rail-node--update{background:var(--brand-color-badge-update);}
-.rail-node--bugfix{background:var(--brand-color-badge-bugfix);}
-.rail-node--improvement{background:var(--brand-color-badge-improvement);}
-.rail-node--soon{background:var(--brand-color-badge-soon);}
-.rail-card{
-  flex:1 1 auto;background:var(--brand-color-surface);
-  border-radius:calc(var(--brand-radius-card) * var(--u));
-  box-shadow:var(--brand-shadow-card);
-  padding:${u(20)} ${u(24)};display:flex;flex-direction:column;justify-content:center;gap:${u(6)};
-}
-.rail-line{display:flex;align-items:center;gap:${u(12)};flex-wrap:wrap;}
-.rail-title{font-family:var(--brand-font-display);font-weight:700;font-size:${u(30)};line-height:1.12;text-wrap:balance;}
-.rail-text{font-size:${u(22)};line-height:1.32;color:var(--brand-color-inkMuted);text-wrap:pretty;}
-.rail-footer{font-size:${u(18)};color:var(--brand-color-inkMuted);}`;
-    return htmlDocument(ctx, { css, body });
+    const head = h(
+      View,
+      { style: { gap: u(14) } },
+      h(
+        View,
+        { style: { flexDirection: 'row', alignItems: 'baseline', gap: u(16) } },
+        h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(46), letterSpacing: u(-1), color: theme.colors.ink } }, doc.product),
+        h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '800', fontSize: u(104), lineHeight: u(104) * 0.9, letterSpacing: u(-4), color: theme.colors.primary } }, doc.version)
+      ),
+      doc.hero?.src
+        ? h(ArtSlot, { image: doc.hero, theme, resolveImageSource: ctx.resolveImageSource, borderRadius: theme.radius.hero, style: { position: 'relative', height: u(280), boxShadow: theme.shadow.hero } })
+        : null,
+      doc.tagline ? h(Text, { style: { fontSize: u(26), color: theme.colors.inkMuted } }, doc.tagline) : null
+    );
+
+    const list = h(
+      View,
+      { style: { flex: 1, minHeight: 0, gap: u(16) } },
+      h(View, { style: { position: 'absolute', left: u(15), top: inset, bottom: inset, width: u(2), backgroundColor: theme.colors.inkMuted, opacity: 0.35 } }),
+      ...entries.map((entry, i) =>
+        h(
+          View,
+          { key: i, style: { flexDirection: 'row', alignItems: 'center', gap: u(14), flex: 1, minHeight: 0 } },
+          h(
+            View,
+            { style: { width: u(GUTTER), alignItems: 'center' } },
+            h(View, {
+              style: {
+                width: u(16),
+                height: u(16),
+                borderRadius: 99,
+                backgroundColor: theme.colors.badge[NODE_COLOR_KEY[entry.kind]] ?? theme.colors.primary,
+                boxShadow: `0 0 0 ${u(6)}px ${theme.colors.canvas}`
+              }
+            })
+          ),
+          h(
+            View,
+            { style: { flex: 1, backgroundColor: theme.colors.surface, borderRadius: theme.radius.card, boxShadow: theme.shadow.card, paddingVertical: u(20), paddingHorizontal: u(24), gap: u(6), justifyContent: 'center' } },
+            h(
+              View,
+              { style: { flexDirection: 'row', alignItems: 'center', gap: u(12), flexWrap: 'wrap' } },
+              h(Badge, { entry, theme, u, fontSize: 16, paddingVertical: 5, paddingHorizontal: 13 }),
+              entry.title
+                ? h(RichText, { value: entry.title, style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(30), lineHeight: u(30) * 1.12, color: theme.colors.ink } })
+                : null
+            ),
+            entry.body ? h(RichText, { value: entry.body, style: { fontSize: u(22), lineHeight: u(22) * 1.32, color: theme.colors.inkMuted } }) : null
+          )
+        )
+      )
+    );
+
+    return h(Canvas, { size: ctx.size, theme, style: { gap: u(22) } }, head, list, doc.footer ? h(Text, { style: { fontSize: u(18), color: theme.colors.inkMuted } }, doc.footer) : null);
   }
 };
 

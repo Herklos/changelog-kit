@@ -2,15 +2,20 @@
 
 Generate branded product-changelog visuals — the "what's new in 3.0" cards, hero
 posters, stories and PDF release notes — from **one JSON document**, in **multiple
-templates**, **multiple resolutions** and **multiple output targets**.
+templates**, **multiple resolutions** and **multiple output targets** — and
+render the exact same templates as **live React Native UI** inside your app.
 
 ```
-doc.json ──▶ brand kit ──▶ template (html) ──▶ renderer ──▶ png · jpg · webp · pdf · html
-                 ▲                 │
-            fonts / colors    AI image provider (optional)
+                          ┌─▶ a React Native / Expo app (live UI)
+doc.json ─▶ brand kit ─▶ template (ReactElement) ─┤
+                 ▲                                └─▶ render-web ─▶ renderer ─▶ png · jpg · webp · pdf · html
+            fonts / colors            AI image provider (optional) ┘
 ```
 
-Everything is plain ESM JavaScript with JSDoc types — no build step, no framework.
+Every template is a pure `(ctx) => ReactElement` — no HTML, no CSS. The same
+component tree renders live in an RN/Expo app, or through `react-native-web` +
+`react-dom/server` for the image/PDF export pipeline. Everything is plain ESM
+JavaScript with JSDoc types — no build step, no framework beyond React itself.
 
 ---
 
@@ -86,13 +91,14 @@ pnpm example        # renders the full matrix with the offline mock provider
 - [Packages](#packages)
 - [Install](#install)
 - [Quick start](#quick-start)
+- [React Native](#react-native)
 - [CLI](#cli)
 - [The changelog document](#the-changelog-document)
 - [Templates](#templates)
 - [Brand kits](#brand-kits)
 - [AI images](#ai-images)
 - [Output targets & sizes](#output-targets--sizes)
-- [Previewing without Chromium](#previewing-without-chromium)
+- [Previewing](#previewing)
 - [Repository layout](#repository-layout)
 - [Development](#development)
 
@@ -104,15 +110,19 @@ pnpm example        # renders the full matrix with the offline mock provider
 | --- | --- | --- |
 | `@changelog-kit/core` | Document model + validation, size presets, the `ChangelogKit` pipeline | none |
 | `@changelog-kit/brand` | Brand kits → CSS custom properties, font loading | none |
-| `@changelog-kit/templates` | Twenty layouts, each a pure `(ctx) => htmlString` | core, brand |
+| `@changelog-kit/templates` | Twenty layouts, each a pure `(ctx) => ReactElement` — install this one in an RN/Expo app | react, react-native, react-native-svg |
+| `@changelog-kit/render-web` | `react-native-web` + `react-dom/server` → a full HTML document, for image/PDF export | react, react-dom, react-native-web |
 | `@changelog-kit/renderer-playwright` | Headless Chromium → png/jpg/webp/pdf, sharp post-processing | playwright, sharp |
 | `@changelog-kit/ai-images` | One `ImageProvider` interface + OpenAI / Stability / Replicate / Gemini / mock | none (fetch) |
 | `@changelog-kit/cli` | `changelog-kit generate …` | all of the above |
 
 The dependency graph is strictly one-directional: `core` and `brand` depend on
-nothing, `templates` depends on both, the renderer and providers depend on
-neither, and only the CLI wires everything together. You can use any package on
-its own — e.g. `templates` in a browser to preview, without the renderer.
+nothing, `templates` depends on both, `render-web` depends on `templates`'
+output shape but not on `templates` itself, the renderer and providers depend
+on neither, and only the CLI wires everything together. An RN/Expo app only
+ever needs `@changelog-kit/templates` (plus `core`/`brand` for the doc model
+and brand presets) — `render-web` and `renderer-playwright` are exporting-only
+and never touch the app.
 
 ## Install
 
@@ -129,6 +139,7 @@ Node ≥ 20 (uses `node:util` `parseArgs`, `structuredClone`, native `fetch`).
 import { ChangelogKit } from '@changelog-kit/core';
 import { builtinTemplates } from '@changelog-kit/templates';
 import { PlaywrightRenderer } from '@changelog-kit/renderer-playwright';
+import { toStaticHtml } from '@changelog-kit/render-web';
 import { OpenAIImageProvider, CachedProvider } from '@changelog-kit/ai-images';
 import { writeFile } from 'node:fs/promises';
 import brand from './octobot.brand.js';
@@ -137,6 +148,7 @@ const kit = new ChangelogKit({
   brand,
   templates: builtinTemplates,
   renderer: new PlaywrightRenderer(),
+  serializer: toStaticHtml,        // turns a template's React element into HTML
   imageProvider: new CachedProvider(new OpenAIImageProvider())   // optional
 });
 
@@ -161,6 +173,46 @@ Every `(template × target)` pair is rendered; `file.filename` is
 
 Without a `write` sink, `generate()` resolves to an array of
 `{ data, contentType, size, filename, html }`.
+
+## React Native
+
+An RN/Expo app installs `@changelog-kit/templates` directly — no server, no
+export step:
+
+```js
+import { Changelog } from '@changelog-kit/templates';
+import { brandPresets } from '@changelog-kit/brand';
+
+<Changelog
+  doc={doc}                        // the same JSON document as the CLI
+  brand={brandPresets.octobotDark}
+  template="whats-new-sheet"
+  baseWidth={750}                  // whats-new-sheet is authored for the 750-wide `in-app` preset
+  scroll                           // put the render in a ScrollView (see caveat below)
+  fontFamilies={{ display: 'DMSans_700Bold', body: 'DMSans_400Regular' }}
+  resolveImageSource={(src) => ({ uri: src })}
+/>
+```
+
+- `unit` (the scale-unit contract every template is built on) comes from the
+  **measured** container width, not `Dimensions.get()` — so `<Changelog>`
+  works inside any layout.
+- `baseWidth` controls how big things render: the default `1080` gives a
+  faithful poster thumbnail; `whats-new-sheet` is authored for the 750-wide
+  `in-app` preset, so `baseWidth={750}` gives it near-native type sizes.
+- `scroll` puts the render in a `ScrollView` so a canvas taller than the
+  viewport (a small `baseWidth` on a tall device) stays reachable. It does
+  **not** bypass a layout's `maxEntries` cap or its own clipping — every
+  layout is still a fixed-size poster underneath.
+- **Fonts**: brand presets load fonts via a `<link>` on the web/export path
+  (`@changelog-kit/brand`'s `fontHead()`), which a native app can't do — load
+  the same fonts yourself (`expo-font` / `@expo-google-fonts/*`) and pass the
+  family names through `fontFamilies`. No `fontFamilies` ⇒ system font.
+
+See `examples/native/` for a working Expo app (template switcher,
+`baseWidth`/`scroll` toggles). Not every layout is a good fit for in-app UI —
+`whats-new-sheet` is the one actually designed for it; the rest are posters
+that also happen to render live.
 
 ## CLI
 
@@ -250,31 +302,51 @@ Twenty built-in layouts:
 | `terminal-notes` | 4:5 | Monospace window chrome with sigil-prefixed lines, for dev audiences |
 | `release-notes` | A4 | Typographic PDF release notes, grouped by kind |
 
-A template is just a function:
+A template is a function that returns a React element — no HTML, no CSS, no
+JSX (this repo has no build step, so it's plain `React.createElement`):
 
 ```js
-import { defineTemplate, htmlDocument, card, cardCss, u } from '@changelog-kit/templates';
+import React from 'react';
+import { View } from '@changelog-kit/templates/rn';
+import { defineTemplate, themeFromContext, Canvas, Card } from '@changelog-kit/templates';
+
+const h = React.createElement;   // no JSX needed — this repo has no build step
 
 export const myTemplate = defineTemplate({
   id: 'my-template',
   name: 'My template',
   aspect: [1, 1],
   maxEntries: 3,
-  render: (ctx) => htmlDocument(ctx, {
-    css: `${cardCss}\n.mine{display:grid;gap:${u(20)}}`,
-    body: `<div class="sheet mine">${ctx.doc.entries.map((e) => card(e)).join('')}</div>`
-  })
+  render(ctx) {
+    const { u, theme } = themeFromContext(ctx);
+    return h(
+      Canvas,
+      { size: ctx.size, theme, style: { flexDirection: 'row', gap: u(20) } },
+      ...ctx.doc.entries.slice(0, 3).map((entry, i) => h(View, { key: i, style: { flex: 1 } }, h(Card, { entry, theme, u })))
+    );
+  }
 });
 
 kit.register(myTemplate);
 ```
 
-**Two rules keep templates resolution- and brand-independent:**
+**Rules that keep templates resolution-, brand- and platform-independent** —
+the same tree renders live in an RN app *and* through SSR for image export:
 
-1. Every length is `calc(N * var(--u))` — write `u(24)`, never `24px`. `--u` is
-   `canvasWidth / 1080`, so the same markup is pixel-correct at 1080px and 4096px.
-2. Every color, radius, shadow and font comes from a `--brand-*` custom property.
-   No hardcoded hex in a template.
+1. Every length goes through `u(n)` (`createScale`/`themeFromContext`) — a
+   plain number, `n * unit` where `unit = canvasWidth / 1080`. Never a raw
+   literal length.
+2. Every color, radius, shadow and font comes from the resolved `theme`
+   (`themeFromContext(ctx)`). No hardcoded hex in a template.
+3. Only style props that exist on **both** React Native and
+   react-native-web. No `experimental_backgroundImage` — use
+   `LinearFill`/`RadialFill` for any gradient.
+4. No `esc()`/`inlineMd()` — use `RichText` for markdown-bearing text;
+   `<Text>` renders children literally.
+
+See `CLAUDE.md`'s "Template rules" for the full list, including the two
+effects (`clip-path`, `writing-mode`) that genuinely have no RN equivalent
+and what each ported layout does instead.
 
 ## Brand kits
 
@@ -350,13 +422,14 @@ Give only a width and the height follows the template's aspect ratio.
 `resizeVariants(buffer, [1200, 800, 400])` derives smaller widths from one master
 render instead of re-rendering.
 
-## Previewing without Chromium
+## Previewing
 
-Both of these import the real template packages through an import map, so what
-you see is what the renderer will shoot:
-
-- `Changelog Kit.dc.html` — gallery of all twenty templates with a brand switcher.
-- `examples/preview.html#t=bento-mosaic&b=octobot-dark&w=1080` — one template, full size.
+`examples/preview.html#t=bento-mosaic&b=octobot-dark&w=1080` imports the real
+`@changelog-kit/templates` package through an import map and mounts a
+template's React element directly with `react-dom/client` +
+`react-native-web` — no build step, no server round-trip, so what you see is
+what the renderer will shoot. For the RN side, run `examples/native/` on a
+simulator.
 
 ## Repository layout
 
@@ -364,21 +437,22 @@ you see is what the renderer will shoot:
 packages/
   core/                 doc model, presets, pipeline          (no deps)
   brand/                brand kits, css vars, fonts           (no deps)
-  templates/            base shell, components, 20 layouts
+  templates/            RN infra (scale, theme, gradients, components), 20 layouts
+  render-web/            react-native-web + react-dom/server → html (image/PDF export only)
   renderer-playwright/  chromium + sharp
   ai-images/            provider interface, 5 adapters, cache
   cli/                  bin/changelog-kit.js + src/run.js
 examples/               octobot-3.0.json, brand kit, generate.mjs, preview.html
+examples/native/        minimal Expo app rendering the templates as live UI
 docs/media/             README example renders
-Changelog Kit.dc.html   browser gallery of every template
 ```
 
 ## Development
 
 ```bash
-pnpm test          # node:test across packages
+pnpm test          # node:test across packages, bare Node — no RN toolchain needed
 pnpm lint
-pnpm example       # renders examples/ with the offline mock provider
+pnpm example       # renders examples/ with the offline mock provider (needs Chromium)
 ```
 
 See [CLAUDE.md](./CLAUDE.md) for architecture invariants and conventions when

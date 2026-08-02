@@ -1,6 +1,9 @@
-import { htmlDocument, u, imageBackground } from '../base.js';
-import { card, cardCss, versionMark, versionMarkCss } from '../components.js';
-import { esc } from '@changelog-kit/core';
+import { h } from '../h.js';
+import { View, Text } from '@changelog-kit/templates/rn';
+import { themeFromContext } from '../theme.js';
+import { Canvas } from '../canvas.js';
+import { Card, VersionMark } from '../components.js';
+import { ArtSlot } from '../image.js';
 
 /**
  * Two cards, a full-bleed hero panel carrying the version, two more cards.
@@ -12,9 +15,9 @@ export const heroSandwich = {
   description: 'Feature cards above and below a full-bleed hero panel with the version number.',
   aspect: [4, 5],
   maxEntries: 4,
-  options: { heroLabel: '', heroFlex: 1.35 },
   render(ctx) {
-    const { doc, brand } = ctx;
+    const { doc } = ctx;
+    const { u, theme } = themeFromContext(ctx);
     const entries = doc.entries.filter((e) => !e.heroOnly).slice(0, 4);
     const top = entries.slice(0, 2);
     const bottom = entries.slice(2, 4);
@@ -22,33 +25,43 @@ export const heroSandwich = {
     const heroLabel = doc.status === 'upcoming' ? 'Coming soon' : '';
 
     const row = (list) =>
-      `<div class="row">${list.map((entry) => card(entry, { dark: entry.dark })).join('')}</div>`;
+      h(
+        View,
+        { style: { flexDirection: 'row', gap: theme.spacing.gap } },
+        ...list.map((entry, i) =>
+          h(
+            View,
+            { key: i, style: { flex: 1, minHeight: u(230) } },
+            h(Card, { entry, theme, u, dark: entry.dark, resolveImageSource: ctx.resolveImageSource })
+          )
+        )
+      );
 
-    const body = `<div class="sheet">
-  ${row(top)}
-  <section class="hero" style="${imageBackground(doc.hero, brand)}">
-    ${heroArt ? '' : versionMark(doc, { size: 300, label: heroLabel })}
-    ${doc.footer ? `<span class="hero-footer">${esc(doc.footer)}</span>` : ''}
-  </section>
-  ${row(bottom)}
-</div>`;
+    const hero = h(
+      View,
+      {
+        style: {
+          flex: 1,
+          minHeight: u(500),
+          borderRadius: theme.radius.hero,
+          boxShadow: theme.shadow.hero,
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden'
+        }
+      },
+      h(ArtSlot, { image: doc.hero, theme, resolveImageSource: ctx.resolveImageSource }),
+      heroArt ? null : h(VersionMark, { doc, theme, u, size: 300, label: heroLabel }),
+      doc.footer
+        ? h(
+            Text,
+            { style: { position: 'absolute', left: u(30), bottom: u(24), color: theme.colors.onDark, opacity: 0.85, fontSize: u(22) } },
+            doc.footer
+          )
+        : null
+    );
 
-    const css = `
-${cardCss}
-${versionMarkCss}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--brand-space-gap) * var(--u));flex:0 0 auto;}
-.row .card{min-height:${u(230)};}
-.hero{
-  flex:1 1 auto;min-height:${u(500)};
-  border-radius:calc(var(--brand-radius-hero) * var(--u));
-  box-shadow:var(--brand-shadow-hero);
-  display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;
-}
-.hero-footer{
-  position:absolute;left:${u(30)};bottom:${u(24)};
-  color:var(--brand-color-onDark,#fff);opacity:.85;font-size:${u(22)};
-}`;
-    return htmlDocument(ctx, { css, body });
+    return h(Canvas, { size: ctx.size, theme }, row(top), hero, row(bottom));
   }
 };
 

@@ -1,5 +1,8 @@
-import { htmlDocument, u } from '../base.js';
-import { esc, inlineMd } from '@changelog-kit/core';
+import { h } from '../h.js';
+import { View, Text } from '@changelog-kit/templates/rn';
+import { themeFromContext } from '../theme.js';
+import { Canvas } from '../canvas.js';
+import { RichText } from '../text.js';
 
 /**
  * Swiss typographic poster: the version set as large as the canvas allows,
@@ -13,56 +16,56 @@ export const megaType = {
   maxEntries: 6,
   render(ctx) {
     const { doc } = ctx;
+    const { u, theme } = themeFromContext(ctx);
     const entries = doc.entries.slice(0, 6);
-    const body = `<div class="sheet mega">
-  <div class="mega-top">
-    <span>${esc(doc.product)}</span>
-    <span>${esc(doc.date || (doc.status === 'upcoming' ? 'Coming soon' : 'Out now'))}</span>
-  </div>
-  <div class="mega-type">
-    <span class="mega-version">${esc(doc.version)}</span>
-    ${doc.tagline ? `<p class="mega-tagline">${esc(doc.tagline)}</p>` : ''}
-  </div>
-  <ol class="mega-index">
-    ${entries.map((e, i) => `<li class="mega-row">
-      <span class="mega-num">${String(i + 1).padStart(2, '0')}</span>
-      <span class="mega-title">${inlineMd(e.title ?? '')}</span>
-      <span class="mega-kind">${esc(e.badge ?? '')}</span>
-    </li>`).join('')}
-  </ol>
-  ${doc.footer ? `<p class="mega-footer">${esc(doc.footer)}</p>` : ''}
-</div>`;
 
-    const css = `
-.mega{gap:${u(18)};}
-.mega-top{
-  display:flex;justify-content:space-between;
-  font-family:var(--brand-font-display);font-weight:700;font-size:${u(22)};
-  letter-spacing:${u(3)};text-transform:uppercase;color:var(--brand-color-inkMuted);
-  padding-bottom:${u(14)};border-bottom:${u(3)} solid var(--brand-color-ink);
-}
-.mega-type{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;min-height:0;}
-.mega-version{
-  font-family:var(--brand-font-display);font-weight:800;font-size:${u(360)};line-height:.78;
-  letter-spacing:${u(-20)};color:var(--brand-color-ink);
-}
-.mega-tagline{
-  font-family:var(--brand-font-display);font-weight:700;font-size:${u(46)};line-height:1.05;
-  letter-spacing:${u(-1)};color:var(--brand-color-primary);margin-top:${u(18)};max-width:${u(780)};
-  text-wrap:balance;
-}
-.mega-index{list-style:none;display:flex;flex-direction:column;}
-.mega-row{
-  display:grid;grid-template-columns:${u(56)} 1fr auto;align-items:baseline;gap:${u(14)};
-  padding:${u(13)} 0;border-top:${u(1)} solid var(--brand-color-inkMuted);
-}
-.mega-num{font-family:var(--brand-font-display);font-weight:700;font-size:${u(20)};color:var(--brand-color-primary);}
-.mega-title{font-family:var(--brand-font-display);font-weight:700;font-size:${u(30)};line-height:1.1;}
-.mega-kind{
-  font-size:${u(17)};letter-spacing:${u(2)};text-transform:uppercase;color:var(--brand-color-inkMuted);
-}
-.mega-footer{font-size:${u(18)};color:var(--brand-color-inkMuted);padding-top:${u(10)};border-top:${u(3)} solid var(--brand-color-ink);}`;
-    return htmlDocument(ctx, { css, body });
+    const top = h(
+      View,
+      { style: { flexDirection: 'row', justifyContent: 'space-between', paddingBottom: u(14), borderBottomWidth: u(3), borderBottomColor: theme.colors.ink } },
+      h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(22), letterSpacing: u(3), textTransform: 'uppercase', color: theme.colors.inkMuted } }, doc.product),
+      h(
+        Text,
+        { style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(22), letterSpacing: u(3), textTransform: 'uppercase', color: theme.colors.inkMuted } },
+        doc.date || (doc.status === 'upcoming' ? 'Coming soon' : 'Out now')
+      )
+    );
+
+    const typeBlock = h(
+      View,
+      { style: { flex: 1, justifyContent: 'center', minHeight: 0 } },
+      h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '800', fontSize: u(360), lineHeight: u(360) * 0.78, letterSpacing: u(-20), color: theme.colors.ink } }, doc.version),
+      doc.tagline
+        ? h(RichText, {
+            value: doc.tagline,
+            style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(46), lineHeight: u(46) * 1.05, letterSpacing: u(-1), color: theme.colors.primary, marginTop: u(18), maxWidth: u(780) }
+          })
+        : null
+    );
+
+    const index = h(
+      View,
+      { style: { gap: 0 } },
+      ...entries.map((entry, i) =>
+        h(
+          View,
+          { key: i, style: { flexDirection: 'row', alignItems: 'baseline', gap: u(14), paddingVertical: u(13), borderTopWidth: u(1), borderTopColor: theme.colors.inkMuted } },
+          h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(20), color: theme.colors.primary, width: u(56) } }, String(i + 1).padStart(2, '0')),
+          h(RichText, { value: entry.title ?? '', style: { flex: 1, fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(30), lineHeight: u(30) * 1.1, color: theme.colors.ink } }),
+          h(Text, { style: { fontSize: u(17), letterSpacing: u(2), textTransform: 'uppercase', color: theme.colors.inkMuted } }, entry.badge ?? '')
+        )
+      )
+    );
+
+    return h(
+      Canvas,
+      { size: ctx.size, theme, style: { gap: u(18) } },
+      top,
+      typeBlock,
+      index,
+      doc.footer
+        ? h(Text, { style: { fontSize: u(18), color: theme.colors.inkMuted, paddingTop: u(10), borderTopWidth: u(3), borderTopColor: theme.colors.ink } }, doc.footer)
+        : null
+    );
   }
 };
 

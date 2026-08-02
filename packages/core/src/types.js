@@ -61,7 +61,7 @@
  * @property {string} [description]
  * @property {[number, number]} [aspect]     Preferred aspect ratio.
  * @property {number} [maxEntries]
- * @property {(ctx: RenderContext) => string} render  Returns a full HTML document.
+ * @property {(ctx: RenderContext) => import('react').ReactElement} render  Pure, no I/O, no state.
  *
  * @typedef {Object} RendererResult
  * @property {Buffer|Uint8Array|string} data
@@ -70,5 +70,8 @@
  * @typedef {Object} Renderer
  * @property {(html: string, ctx: RenderContext) => Promise<RendererResult>} render
  * @property {() => Promise<void>} [dispose]
+ *
+ * @typedef {(element: import('react').ReactElement, ctx: RenderContext) => string} Serializer
+ * Turns a template's React element into a full HTML document (server-side render).
  */
 export {};

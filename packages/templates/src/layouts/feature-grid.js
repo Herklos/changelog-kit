@@ -1,9 +1,11 @@
-import { htmlDocument, u } from '../base.js';
-import { card, cardCss } from '../components.js';
-import { esc } from '@changelog-kit/core';
+import { h } from '../h.js';
+import { View, Text } from '@changelog-kit/templates/rn';
+import { themeFromContext } from '../theme.js';
+import { Canvas } from '../canvas.js';
+import { Card } from '../components.js';
 
 /**
- * Header + masonry-ish grid of feature cards. No hero — scales from 2 to 8
+ * Header + wrapping grid of feature cards. No hero — scales from 2 to 8
  * entries and to any aspect ratio, so it is the safe default for odd sizes.
  */
 export const featureGrid = {
@@ -14,40 +16,49 @@ export const featureGrid = {
   maxEntries: 8,
   render(ctx) {
     const { doc } = ctx;
+    const { u, theme } = themeFromContext(ctx);
     const entries = doc.entries.slice(0, 8);
-    const body = `<div class="sheet">
-  <header class="head">
-    <div class="head-left">
-      ${doc.product ? `<span class="head-product">${esc(doc.product)}</span>` : ''}
-      <span class="head-version">${esc(doc.version)}</span>
-    </div>
-    <div class="head-right">
-      ${doc.tagline ? `<span class="head-tagline">${esc(doc.tagline)}</span>` : ''}
-      ${doc.date ? `<span class="head-date">${esc(doc.date)}</span>` : ''}
-    </div>
-  </header>
-  <div class="grid">
-    ${entries.map((e) => `<div class="cell" style="grid-column:span ${e.span > 1 ? 2 : 1}">${card(e, { dark: e.dark })}</div>`).join('')}
-  </div>
-</div>`;
 
-    const css = `
-${cardCss}
-.head{display:flex;align-items:flex-end;justify-content:space-between;gap:${u(20)};padding-bottom:${u(24)};}
-.head-left{display:flex;align-items:baseline;gap:${u(16)};}
-.head-product{font-family:var(--brand-font-display);font-weight:700;font-size:${u(46)};}
-.head-version{
-  font-family:var(--brand-font-display);font-weight:800;font-size:${u(92)};line-height:.9;
-  letter-spacing:${u(-3)};color:var(--brand-color-primary);
-}
-.head-right{display:flex;flex-direction:column;align-items:flex-end;gap:${u(4)};color:var(--brand-color-inkMuted);font-size:${u(24)};}
-.grid{
-  flex:1 1 auto;display:grid;grid-template-columns:1fr 1fr;
-  gap:calc(var(--brand-space-gap) * var(--u));align-content:start;
-}
-.cell{display:flex;}
-.cell .card{width:100%;}`;
-    return htmlDocument(ctx, { css, body });
+    const header = h(
+      View,
+      { style: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: u(20), paddingBottom: u(24) } },
+      h(
+        View,
+        { style: { flexDirection: 'row', alignItems: 'baseline', gap: u(16) } },
+        doc.product
+          ? h(Text, { style: { fontFamily: theme.fonts.display, fontWeight: '700', fontSize: u(46), color: theme.colors.ink } }, doc.product)
+          : null,
+        h(
+          Text,
+          { style: { fontFamily: theme.fonts.display, fontWeight: '800', fontSize: u(92), lineHeight: u(92) * 0.9, letterSpacing: u(-3), color: theme.colors.primary } },
+          doc.version
+        )
+      ),
+      h(
+        View,
+        { style: { alignItems: 'flex-end', gap: u(4) } },
+        doc.tagline ? h(Text, { style: { color: theme.colors.inkMuted, fontSize: u(24) } }, doc.tagline) : null,
+        doc.date ? h(Text, { style: { color: theme.colors.inkMuted, fontSize: u(24) } }, doc.date) : null
+      )
+    );
+
+    // CSS Grid's `1fr 1fr` correctly subtracts the gap from each track;
+    // flex-wrap with a percentage basis doesn't, so a full row can overrun
+    // its container by one gap's width — a few px, silently clipped by
+    // Canvas's overflow:hidden. Accepted per the native-port fidelity bar.
+    const grid = h(
+      View,
+      { style: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.gap, alignContent: 'flex-start' } },
+      ...entries.map((entry, i) =>
+        h(
+          View,
+          { key: i, style: { flexBasis: entry.span > 1 ? '100%' : '50%', flexGrow: 0, flexShrink: 0 } },
+          h(Card, { entry, theme, u, dark: entry.dark, resolveImageSource: ctx.resolveImageSource })
+        )
+      )
+    );
+
+    return h(Canvas, { size: ctx.size, theme }, header, grid);
   }
 };
 

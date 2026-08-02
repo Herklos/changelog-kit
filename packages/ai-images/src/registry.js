@@ -43,17 +43,27 @@ export class CachedProvider extends ImageProvider {
     const crypto = this._crypto ?? (await import('node:crypto'));
     const prepared = this.inner.prepare(request);
     const key = crypto.createHash('sha1').update(`${this.inner.id}|${this.inner.model}|${prepared.prompt}|${prepared.width}x${prepared.height}`).digest('hex');
-    const file = path.join(this.dir, `${key}.png`);
+    const file = path.join(this.dir, `${key}.bin`);
+    // Cached bytes need their original mime back on a hit — providers don't
+    // all emit PNG (e.g. `MockImageProvider` emits `image/svg+xml`), and
+    // browsers refuse to decode an <img> whose data-URI mime disagrees with
+    // its actual bytes. A small sidecar keeps the two in sync.
+    const metaFile = path.join(this.dir, `${key}.json`);
     try {
-      const cached = await fs.readFile(file);
-      return { provider: this.inner.id, model: this.inner.model, revisedPrompt: prepared.prompt, path: file, dataUri: `data:image/png;base64,${cached.toString('base64')}`, cached: true };
+      const [cached, meta] = await Promise.all([fs.readFile(file), fs.readFile(metaFile, 'utf8')]);
+      const { mime } = JSON.parse(meta);
+      return { provider: this.inner.id, model: this.inner.model, revisedPrompt: prepared.prompt, path: file, dataUri: `data:${mime};base64,${cached.toString('base64')}`, cached: true };
     } catch { /* miss */ }
 
     const result = await this.inner.generate(request);
-    const base64 = result.dataUri?.split(',')[1];
-    if (base64) {
+    const match = result.dataUri?.match(/^data:([^;]+);base64,(.*)$/s);
+    if (match) {
+      const [, mime, base64] = match;
       await fs.mkdir(this.dir, { recursive: true });
-      await fs.writeFile(file, Buffer.from(base64, 'base64'));
+      await Promise.all([
+        fs.writeFile(file, Buffer.from(base64, 'base64')),
+        fs.writeFile(metaFile, JSON.stringify({ mime }))
+      ]);
       result.path = file;
     }
     return result;

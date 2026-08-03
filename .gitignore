@@ -5,3 +5,5 @@ examples/out/
 dist/
 *.tsbuildinfo
 .expo/
+examples/native/ios/
+examples/native/android/

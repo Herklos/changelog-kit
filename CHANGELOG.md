@@ -18,8 +18,13 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   template's React element into a full HTML document, so
   `renderer-playwright` keeps producing png/jpg/webp/pdf unchanged. `cli` and
   `examples/generate.mjs` wire it in as `ChangelogKit`'s `serializer` option.
-- `examples/native/` — a minimal Expo app demonstrating `<Changelog>` (template
-  switcher, `baseWidth`/`scroll` toggles).
+- `examples/native/` rebuilt as a TypeScript Expo Router app: a full template
+  gallery (all 20 built-ins, live-rendered via `<Changelog>`), a brand-kit
+  switcher, package info cards and a CLI snippet — a native port of the
+  project's original `Changelog Kit.dc.html` design brief. Tapping a template
+  pushes a full-screen live preview with its own brand picker
+  (`@expo/ui`'s `Picker`) — a native-only affordance the flat web brief had no
+  room for. Runs on Expo SDK 57.
 - `@changelog-kit/core`: `inlineTokens(str)` — tokenizes the tiny inline
   markdown subset (`**bold**`, `*italic*`, `` `code` ``, line breaks) that
   `inlineMd()` serializes to HTML; `templates`' `RichText` renders the same

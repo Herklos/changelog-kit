@@ -12,7 +12,7 @@
   "scripts": {
     "example": "pnpm --filter @changelog-kit/examples run generate",
     "cli": "pnpm --filter @changelog-kit/cli exec changelog-kit",
-    "lint": "eslint packages",
+    "lint": "eslint packages examples",
     "build": "tsc -b",
     "build:clean": "tsc -b --clean",
     "typecheck": "tsc -b --force",

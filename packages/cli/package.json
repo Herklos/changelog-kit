@@ -17,11 +17,16 @@
     "changelog-kit": "./bin/changelog-kit.js"
   },
   "exports": {
-    ".": "./src/run.js"
+    ".": {
+      "types": "./dist/src/run.d.ts",
+      "default": "./dist/src/run.js"
+    }
   },
+  "main": "./dist/src/run.js",
+  "types": "./dist/src/run.d.ts",
   "files": [
     "bin",
-    "src"
+    "dist/src"
   ],
   "dependencies": {
     "@changelog-kit/ai-images": "workspace:*",

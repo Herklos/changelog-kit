@@ -14,11 +14,19 @@
     "access": "public"
   },
   "exports": {
-    ".": "./src/index.js",
-    "./providers/*": "./src/providers/*.js"
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./providers/*": {
+      "types": "./dist/src/providers/*.d.ts",
+      "default": "./dist/src/providers/*.js"
+    }
   },
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "files": [
-    "src"
+    "dist/src"
   ],
   "devDependencies": {
     "@changelog-kit/brand": "workspace:*"

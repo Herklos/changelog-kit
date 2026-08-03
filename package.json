@@ -1,7 +1,10 @@
 {
   "name": "changelog-kit",
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/Drakkar-Software/changelog-kit.git" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Drakkar-Software/changelog-kit.git"
+  },
   "private": true,
   "version": "0.1.0",
   "description": "Generate branded product changelog visuals in multiple templates, resolutions and targets (png, jpg, webp, pdf, svg, html).",
@@ -10,11 +13,19 @@
     "example": "pnpm --filter @changelog-kit/examples run generate",
     "cli": "pnpm --filter @changelog-kit/cli exec changelog-kit",
     "lint": "eslint packages",
-    "test": "node --test \"packages/*/test/*.test.js\""
+    "build": "tsc -b",
+    "build:clean": "tsc -b --clean",
+    "typecheck": "tsc -b --force",
+    "test": "tsc -b && node --test \"packages/*/dist/test/*.test.js\""
   },
   "packageManager": "pnpm@9.12.0",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "devDependencies": {
-    "eslint": "^9.12.0"
+    "@types/node": "^22.20.1",
+    "eslint": "^9.12.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.65.0"
   }
 }

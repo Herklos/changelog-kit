@@ -14,10 +14,15 @@
     "access": "public"
   },
   "exports": {
-    ".": "./src/index.js"
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
   },
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "files": [
-    "src"
+    "dist/src"
   ],
   "dependencies": {
     "@changelog-kit/brand": "workspace:*",
@@ -27,6 +32,9 @@
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
-    "@changelog-kit/templates": "workspace:*"
+    "@changelog-kit/templates": "workspace:*",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/react-native-web": "^0.19"
   }
 }

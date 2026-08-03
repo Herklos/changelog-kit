@@ -28,8 +28,22 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   `metric-cards`, `timeline-rail`, `split-diagonal`, `device-showcase`,
   `mega-type`, `ticket-stub` and `whats-new-sheet` (twenty built-ins total).
 - `octobot-halo` brand preset (octobot.cloud landing-page gradient).
+- `@changelog-kit/core`'s `Target.format` gained `'native'` — the live React
+  Native rendering path (`<Changelog>`'s internal `template.render()` call),
+  alongside the export formats (`png`/`jpg`/`jpeg`/`webp`/`pdf`/`svg`/`html`).
 
 ### Changed
+
+- **All packages are now TypeScript**, compiled with project references
+  (`tsc -b`) — `pnpm build` (or `pnpm test`, which runs it first) must be run
+  before consuming `dist/` output; there is no more zero-build "import `src/`
+  directly" mode. `RenderContext`/`Template`/`Renderer`/`Serializer` in
+  `@changelog-kit/core` stay generic over `TBrand`/`TElement` (default
+  `unknown`) so core still imports neither `@changelog-kit/brand` nor
+  `react`; `@changelog-kit/templates` specializes them to its own `BrandKit`/
+  `ReactElement` via a new `Ctx`/`TemplateDef` pair (`context.ts`). Every
+  package's public JS/runtime behavior is unchanged — this is a tooling and
+  type-safety change, not an API change.
 
 - **Breaking: the `Template.render(ctx)` contract.** It now returns a React
   element instead of an HTML string. `ChangelogKit` gained a `serializer`

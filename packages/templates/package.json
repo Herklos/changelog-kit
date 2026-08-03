@@ -14,19 +14,39 @@
     "access": "public"
   },
   "exports": {
-    ".": "./src/index.js",
-    "./layouts/*": "./src/layouts/*.js",
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./layouts/*": {
+      "types": "./dist/src/layouts/*.d.ts",
+      "default": "./dist/src/layouts/*.js"
+    },
     "./rn": {
-      "react-native": "./src/rn.native.js",
-      "default": "./src/rn.web.js"
+      "react-native": {
+        "types": "./dist/src/rn.native.d.ts",
+        "default": "./dist/src/rn.native.js"
+      },
+      "default": {
+        "types": "./dist/src/rn.web.d.ts",
+        "default": "./dist/src/rn.web.js"
+      }
     },
     "./svg": {
-      "react-native": "./src/svg.native.js",
-      "default": "./src/svg.web.js"
+      "react-native": {
+        "types": "./dist/src/svg.native.d.ts",
+        "default": "./dist/src/svg.native.js"
+      },
+      "default": {
+        "types": "./dist/src/svg.web.d.ts",
+        "default": "./dist/src/svg.web.js"
+      }
     }
   },
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "files": [
-    "src"
+    "dist/src"
   ],
   "dependencies": {
     "@changelog-kit/brand": "workspace:*",
@@ -50,8 +70,13 @@
     }
   },
   "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/react-native-web": "^0.19",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-native": "0.81.4",
+    "react-native-svg": "15.13.0",
     "react-native-web": "^0.21.2"
   }
 }

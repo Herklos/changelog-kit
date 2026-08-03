@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    { "path": "../ai-images" },
+    { "path": "../brand" },
+    { "path": "../core" },
+    { "path": "../render-web" },
+    { "path": "../renderer-playwright" },
+    { "path": "../templates" }
+  ]
+}

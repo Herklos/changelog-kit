@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/brand" },
+    { "path": "packages/templates" },
+    { "path": "packages/render-web" },
+    { "path": "packages/renderer-playwright" },
+    { "path": "packages/ai-images" },
+    { "path": "packages/cli" }
+  ]
+}

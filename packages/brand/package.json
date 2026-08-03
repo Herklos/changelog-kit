@@ -14,10 +14,18 @@
     "access": "public"
   },
   "exports": {
-    ".": "./src/index.js",
-    "./presets": "./src/presets.js"
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./presets": {
+      "types": "./dist/src/presets.d.ts",
+      "default": "./dist/src/presets.js"
+    }
   },
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "files": [
-    "src"
+    "dist/src"
   ]
 }
